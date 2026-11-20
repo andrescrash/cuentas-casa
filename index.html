@@ -406,33 +406,43 @@ function idb(){return new Promise((ok,ko)=>{const r=indexedDB.open('cuentasCasa'
 async function kvSet(k,v){const d=await idb();return new Promise(ok=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=ok})}
 async function kvGet(k){const d=await idb();return new Promise(ok=>{const r=d.transaction('kv').objectStore('kv').get(k);r.onsuccess=()=>ok(r.result);r.onerror=()=>ok(null)})}
 function estado(t){$('estado').innerHTML=t}
-function save(){try{localStorage.setItem('cuentasCasa2',JSON.stringify(DB))}catch(e){}pendiente=true;estado('⏳ Guardando…');clearTimeout(tSave);tSave=setTimeout(()=>{nubeGuardar();escribirArchivo()},600)}
+// Con sesión, no se sube nada a la nube hasta haber cargado lo último de ella (LISTO),
+// para que un dispositivo con datos viejos nunca pise lo que se guardó desde otro.
+function save(){try{localStorage.setItem('cuentasCasa2',JSON.stringify(DB))}catch(e){}if(USR&&!LISTO)return;pendiente=true;estado('⏳ Guardando…');clearTimeout(tSave);tSave=setTimeout(()=>{nubeGuardar();escribirArchivo()},600)}
 
 /* ================= nube (Supabase) ================= */
 const SB=supabase.createClient('https://xbwabpkasbnyofpleaaj.supabase.co','sb_publishable_2DKXXY__pCnlwuMCYU3OQA_o9tJRtnt');
-let USR=null,pendiente=false;
+let USR=null,pendiente=false,LISTO=false,VER=null,guardando=false;// VER = versión de la nube sobre la que estamos trabajando
 const hora=()=>new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-async function nubeGuardar(){if(!USR)return;
- const{error}=await SB.from('cuentas').upsert({usuario:USR.id,datos:DB,actualizado:new Date().toISOString()});
- if(error){estado('⚠️ Sin conexión, reintentando… <a href="#" onclick="nubeGuardar();return false">reintentar</a>');setTimeout(nubeGuardar,15000);return}
- pendiente=false;estado('☁️ Guardado '+hora());$('nubeInfo').textContent='Sesión: '+USR.email+' · último guardado '+hora()}
+async function nubeGuardar(){if(!USR||!LISTO||guardando)return;guardando=true;
+ try{const ahora=new Date().toISOString();let r;
+  // solo se guarda si la nube sigue en la versión que cargamos; si otro dispositivo guardó antes, no se pisa
+  if(VER)r=await SB.from('cuentas').update({datos:DB,actualizado:ahora}).eq('usuario',USR.id).eq('actualizado',VER).select('actualizado');
+  else r=await SB.from('cuentas').upsert({usuario:USR.id,datos:DB,actualizado:ahora}).select('actualizado');
+  if(r.error){estado('⚠️ Sin conexión, reintentando… <a href="#" onclick="nubeGuardar();return false">reintentar</a>');setTimeout(nubeGuardar,15000);return}
+  if(!r.data||!r.data.length)return conflicto();
+  VER=r.data[0].actualizado;pendiente=false;estado('☁️ Guardado '+hora());$('nubeInfo').textContent='Sesión: '+USR.email+' · último guardado '+hora()}
+ finally{guardando=false}}
+async function conflicto(){pendiente=false;await nubeCargar(true);
+ avisar('Mientras tanto se guardaron cambios desde otro dispositivo. Ya cargué lo más reciente de la nube; si tu último cambio no aparece, hazlo de nuevo.','🔄 Datos actualizados')}
 async function nubeCargar(manual){if(!USR)return;if(pendiente&&!manual)return;
  const{data,error}=await SB.from('cuentas').select('datos,actualizado').eq('usuario',USR.id).maybeSingle();
  if(error){estado('⚠️ No pude leer la nube: '+error.message);return}
- if(data&&data.datos&&data.datos.version===2){DB=data.datos;try{localStorage.setItem('cuentasCasa2',JSON.stringify(DB))}catch(e){}renderTodo();
+ if(data&&data.datos&&data.datos.version===2){if(LISTO&&data.actualizado===VER&&!manual)return;
+  DB=data.datos;VER=data.actualizado;LISTO=true;try{localStorage.setItem('cuentasCasa2',JSON.stringify(DB))}catch(e){}renderTodo();
   if(migrarSemilla()){save();return}
   estado('☁️ Al día '+hora());$('nubeInfo').textContent='Sesión: '+USR.email+' · datos del '+new Date(data.actualizado).toLocaleString('es-CO')}
  else if(!data){ // primera vez: subir lo que hay en este navegador
-  migrarSemilla();
+  LISTO=true;VER=null;migrarSemilla();
   if(DB.periodos.length&&await preguntar('La nube está vacía. ¿Subir los datos que tienes en este computador ('+DB.periodos.length+' periodos)?',{titulo:'☁️ Nube vacía',si:'Subir'}))await nubeGuardar();
   else{estado('☁️ Nube vacía · puedes importar un respaldo en Configuración');$('nubeInfo').textContent='Sesión: '+USR.email}}}
 async function entrar(ev){ev.preventDefault();$('lgMsg').textContent='Entrando…';
  const{data,error}=await SB.auth.signInWithPassword({email:$('lgCorreo').value.trim(),password:$('lgClave').value});
  if(error){$('lgMsg').textContent='❌ '+(error.message==='Invalid login credentials'?'Correo o clave incorrectos':error.message);return}
  $('lgClave').value='';USR=data.user;$('login').classList.add('hide');nubeCargar(true)}
-async function salir(){if(pendiente)await nubeGuardar();await SB.auth.signOut();USR=null;$('login').classList.remove('hide')}
+async function salir(){if(pendiente)await nubeGuardar();await SB.auth.signOut();USR=null;LISTO=false;VER=null;$('login').classList.remove('hide')}
 async function iniciarNube(){const{data}=await SB.auth.getSession();
- if(data.session){USR=data.session.user;nubeCargar(true)}else $('login').classList.remove('hide')}
+ if(data.session){USR=data.session.user;estado('⏳ Cargando de la nube…');nubeCargar(true)}else $('login').classList.remove('hide')}
 // al volver a la app (p. ej. del celular al PC) traer lo último
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')nubeCargar()});
 window.addEventListener('beforeunload',e=>{if(pendiente){nubeGuardar();e.preventDefault()}});
@@ -446,12 +456,12 @@ async function elegirCarpeta(){
  if(!window.showDirectoryPicker)return avisar('Tu navegador no permite guardar en carpeta. Usa Chrome o Edge.');
  try{dirHandle=await showDirectoryPicker({mode:'readwrite'});dirOK=true;await kvSet('dir',dirHandle);
   try{const f=await dirHandle.getFileHandle('cuentas-datos.json');const x=JSON.parse(await (await f.getFile()).text());
-   if(x.version===2&&await preguntar('Encontré cuentas-datos.json en esa carpeta. ¿Cargar esos datos o sobrescribirlos con los actuales?',{titulo:'📁 Datos encontrados',si:'Cargar esos datos',no:'Sobrescribir'})){DB=x;renderTodo()}}catch(e){}
+   if(!USR&&x.version===2&&await preguntar('Encontré cuentas-datos.json en esa carpeta. ¿Cargar esos datos o sobrescribirlos con los actuales?',{titulo:'📁 Datos encontrados',si:'Cargar esos datos',no:'Sobrescribir'})){DB=x;renderTodo()}}catch(e){}
   escribirArchivo();infoCarpeta()}catch(e){}}
-async function reconectar(){if(!dirHandle)return;if(await dirHandle.requestPermission({mode:'readwrite'})==='granted'){dirOK=true;await cargarDeArchivo();escribirArchivo();infoCarpeta()}}
+async function reconectar(){if(!dirHandle)return;if(await dirHandle.requestPermission({mode:'readwrite'})==='granted'){dirOK=true;escribirArchivo();infoCarpeta()}}
 async function cargarDeArchivo(){try{const f=await dirHandle.getFileHandle('cuentas-datos.json');const x=JSON.parse(await (await f.getFile()).text());if(x.version===2){DB=x;renderTodo()}}catch(e){}}
 function infoCarpeta(){$('carpetaInfo').textContent=dirHandle?'Carpeta: '+dirHandle.name+(dirOK?' (conectada ✅)':' (falta dar permiso)'):'Sin carpeta elegida.'}
-async function iniciarArchivo(){try{dirHandle=await kvGet('dir');if(dirHandle){dirOK=(await dirHandle.queryPermission({mode:'readwrite'}))==='granted';if(dirOK)await cargarDeArchivo()}}catch(e){dirHandle=null}
+async function iniciarArchivo(){try{dirHandle=await kvGet('dir');if(dirHandle){dirOK=(await dirHandle.queryPermission({mode:'readwrite'}))==='granted';}}catch(e){dirHandle=null}
  infoCarpeta();escribirArchivo()}
 function descargarRespaldo(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,1)],{type:'application/json'}));a.download='cuentas-respaldo-'+iso(new Date())+'.json';a.click()}
 function importar(inp){const f=inp.files[0];if(!f)return;f.text().then(async t=>{let x;try{x=JSON.parse(t);if(x.version!==2)throw 0}catch(e){return avisar('Ese archivo no es un respaldo válido de Cuentas Casa.','Archivo inválido')}
@@ -650,8 +660,21 @@ function zoomEn(z,cx,cy,anim){const im=document.querySelector('.vz-img');if(!im)
   if(e.key==='Escape')cerrarVisor();else if(e.key==='ArrowRight')moverVisor(1);else if(e.key==='ArrowLeft')moverVisor(-1)})})();
 
 /* ---- galería ---- */
-async function abrirGaleria(){const l=compsPeriodo();
- if(!l.length)return avisar('Adjunta fotos con 📷 al registrar un gasto, o con 📎 en su fila.','Aún no hay comprobantes en este periodo');
+// archivos subidos a la carpeta del periodo que ningún gasto usa (p. ej. si un gasto se perdió)
+async function huerfanos(p=P()){if(!USR||!p)return[];const usados=new Set();
+ DB.periodos.forEach(q=>['egresos','matilde','andres'].forEach(k=>(q[k]||[]).forEach(it=>it.comp&&usados.add(it.comp))));
+ const{data,error}=await SB.storage.from('comprobantes').list(`${USR.id}/${p.id}`,{limit:500});if(error||!data)return[];
+ return data.filter(f=>f.name&&f.id).map(f=>`${USR.id}/${p.id}/${f.name}`).filter(r=>!usados.has(r))}
+async function abrirGaleria(){const l=compsPeriodo(),hu=await huerfanos();
+ if(!l.length&&!hu.length)return avisar('Adjunta fotos con 📷 al registrar un gasto, o con 📎 en su fila.','Aún no hay comprobantes en este periodo');
+ let ph=null;if(hu.length){try{await urlsDe(hu)}catch(e){}
+  ph=()=>{$('galGrid').insertAdjacentHTML('beforeend',`<div class="gal-tot" style="text-align:left;color:var(--bad)">⚠️ ${hu.length} comprobante${hu.length>1?'s':''} sin gasto (se subió pero el gasto no quedó guardado). Tócalo para recuperarlo.</div>`+
+   hu.map((r,i)=>`<button class="gal-it" data-h="${i}" style="--c:#f59e0b"><span class="gal-img">${esPdf(r)?'<span class="gal-pdf">📄</span>':`<img src="${URLS[r]?URLS[r].u:''}" alt="">`}</span><span class="gal-pie"><b>Sin gasto</b><span>${new Date(+r.split('/').pop().split('.')[0]).toLocaleString('es-CO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></span><span class="gal-sec">Recuperar</span></button>`).join(''));
+   const viejo=$('galGrid').onclick;$('galGrid').onclick=async e=>{const b=e.target.closest('[data-h]');if(!b)return viejo&&viejo(e);const r=hu[+b.dataset.h];
+    if(P().cerrado)return avisar('El periodo está cerrado; reábrelo para recuperar.');
+    if(!await preguntar('Se crea un egreso con este comprobante. Luego le pones el nombre y el valor.',{titulo:'Recuperar comprobante',si:'Crear egreso'}))return;
+    P().egresos.push({d:'RECUPERADO',v:0,cat:'Otros',comp:r});save();renderPeriodo();$('galeria').classList.add('hide');
+    const c=$('salidas').closest('.card');c.classList.remove('plegada');c.scrollIntoView({behavior:'smooth'})}}}
  try{await urlsDe(l.map(c=>c.it.comp))}catch(e){return avisar(e.message,'No pude cargar los comprobantes')}
  const tot=l.reduce((s,c)=>s+num(c.it.v),0);
  $('galGrid').innerHTML=l.map((c,i)=>{const u=URLS[c.it.comp].u;return`<button class="gal-it" data-i="${i}" style="--c:${c.col}">
@@ -659,6 +682,7 @@ async function abrirGaleria(){const l=compsPeriodo();
   <span class="gal-pie"><b>${esc(c.it.d||'Sin nombre')}</b><span>${c.it.v?fmt(c.it.v):''}</span></span><span class="gal-sec">${esc(c.sec)}</span></button>`}).join('')+
   `<div class="gal-tot">${l.length} comprobante${l.length>1?'s':''} · ${fmt(tot)}</div>`;
  $('galGrid').onclick=e=>{const b=e.target.closest('[data-i]');if(b){$('galeria').classList.add('hide');verComp(l[+b.dataset.i].it)}};
+ if(!l.length)$('galGrid').innerHTML='';if(ph)ph();
  $('galeria').classList.remove('hide')}
 
 function btnComp(it,lock){const b=document.createElement('button');b.className='x';
@@ -763,7 +787,7 @@ function resumen(){const p=P();if(!p)return;const c=calc(p);
  const mx=Math.max(1,...c.porP.map(x=>x.t));
  $('porPer').innerHTML=c.porP.map(x=>`<div class="hbar"><div class="row"><span><span class="dot" style="background:${x.color}"></span>${esc(x.nombre)}</span><b>${fmt(x.t)}</b></div><div class="tr"><i style="width:${x.t/mx*100}%;background:${x.color}"></i></div></div>`).join('')||'<p class="mut">Sin personas.</p>';
  if($('totE'))$('totE').textContent=fmt(c.te);if($('totM'))$('totM').textContent=fmt(c.tm);if($('totA'))$('totA').textContent=fmt(c.ta);
- const nc=compsPeriodo(p).length;$('galN').textContent=nc;$('btnGal').classList.toggle('hide',!nc)}
+ const nc=compsPeriodo(p).length;$('galN').textContent=nc;$('galN').classList.toggle('hide',!nc)}
 $('selPer').onchange=e=>{DB.actual=e.target.value;save();renderPeriodo()};
 
 /* ================= historial ================= */
