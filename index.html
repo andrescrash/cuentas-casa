@@ -159,6 +159,12 @@ td input,td select{width:100%;border:1px solid transparent;background:transparen
  </form>
 </div></div>
 
+<div id="comp" class="modal hide" onclick="if(event.target===this)cerrarComp()"><div class="card" style="max-width:720px;width:100%">
+ <h2><span id="cpTitulo">🧾 Comprobante</span><button class="x" onclick="cerrarComp()" style="font-size:18px">✕</button></h2>
+ <div id="cpCuerpo"></div>
+ <div class="row" style="justify-content:flex-end;margin-top:12px"><a id="cpAbrir" class="sec" target="_blank" rel="noopener" style="padding:8px 11px;border-radius:10px;border:1px solid var(--bd);text-decoration:none;color:inherit">↗️ Abrir</a><button class="sec" id="cpCambiar">🔁 Reemplazar</button><button class="sec" id="cpQuitar">🗑️ Quitar</button></div>
+</div></div>
+
 <div id="modal" class="modal hide"><div class="card">
  <h2><span id="mTitulo">Nuevo periodo</span><button class="x" onclick="cerrarModal()" style="font-size:18px">✕</button></h2>
  <div class="atajos" id="atajos"></div>
@@ -360,6 +366,32 @@ function filaValor(it,lock,onch){const i=document.createElement('input');i.input
 function filaTexto(it,campo,lock,ph){const i=document.createElement('input');i.value=it[campo]||'';i.placeholder=ph||'';i.disabled=lock;i.oninput=()=>{it[campo]=i.value;save()};return i}
 function td(tr,cls,el){const c=tr.insertCell();if(cls)c.className=cls;if(el)c.appendChild(el);return c}
 function btnX(lock,fn){const b=document.createElement('button');b.className='x';b.textContent='✕';b.title='Quitar';b.disabled=lock;b.onclick=fn;return b}
+/* ================= comprobantes ================= */
+async function comprimir(f){if(!f.type.startsWith('image/'))return f; // PDFs tal cual
+ const img=await createImageBitmap(f),k=Math.min(1,1600/Math.max(img.width,img.height));
+ const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+ return new Promise(ok=>c.toBlob(b=>ok(b),'image/jpeg',0.72))}
+function elegirComp(it){if(!USR)return alert('Inicia sesión para adjuntar comprobantes.');
+ const inp=document.createElement('input');inp.type='file';inp.accept='image/*,application/pdf';
+ inp.onchange=async()=>{const f=inp.files[0];if(!f)return;estado('⏳ Subiendo comprobante…');
+  try{const b=await comprimir(f),ext=b.type==='application/pdf'?'pdf':'jpg',ruta=`${USR.id}/${DB.actual}/${Date.now()}.${ext}`;
+   const{error}=await SB.storage.from('comprobantes').upload(ruta,b,{contentType:b.type});if(error)throw error;
+   const viejo=it.comp;it.comp=ruta;save();renderPeriodo();if(viejo)SB.storage.from('comprobantes').remove([viejo]);
+  }catch(e){estado('⚠️ No se pudo subir: '+(e.message||e))}};inp.click()}
+async function verComp(it,lock){const{data,error}=await SB.storage.from('comprobantes').createSignedUrl(it.comp,600);
+ if(error)return alert('No pude abrir el comprobante: '+error.message);
+ $('cpTitulo').textContent='🧾 '+(it.d||'Comprobante')+(it.v?' · '+fmt(it.v):'');
+ $('cpCuerpo').innerHTML=it.comp.endsWith('.pdf')?`<iframe src="${data.signedUrl}" style="width:100%;height:70vh;border:0"></iframe>`:`<img src="${data.signedUrl}" style="max-width:100%;max-height:70vh;display:block;margin:auto;border-radius:10px">`;
+ $('cpAbrir').href=data.signedUrl;$('cpCambiar').disabled=$('cpQuitar').disabled=lock;
+ $('cpCambiar').onclick=()=>{cerrarComp();elegirComp(it)};
+ $('cpQuitar').onclick=()=>{if(!confirm('¿Quitar este comprobante?'))return;SB.storage.from('comprobantes').remove([it.comp]);delete it.comp;save();cerrarComp();renderPeriodo()};
+ $('comp').classList.remove('hide')}
+function cerrarComp(){$('comp').classList.add('hide');$('cpCuerpo').innerHTML=''}
+function btnComp(it,lock){const b=document.createElement('button');b.className='x';
+ if(it.comp){b.textContent='🧾';b.title='Ver comprobante';b.style.color='var(--ok,#10b981)';b.onclick=()=>verComp(it,lock)}
+ else{b.textContent='📎';b.title='Adjuntar comprobante (foto o captura)';b.disabled=lock;b.onclick=()=>elegirComp(it)}return b}
+function quitarFila(arr,i){const it=arr[i];if(it&&it.comp){if(!confirm('Este gasto tiene comprobante. ¿Borrar gasto y comprobante?'))return;SB.storage.from('comprobantes').remove([it.comp])}arr.splice(i,1);save();renderPeriodo()}
+
 function pillDe(t){const m=/^(CB|ROJA|BLANCA)\b/i.exec(t||'');return m?m[1].toUpperCase():''}
 
 function renderPeriodo(){const p=P();
@@ -388,16 +420,16 @@ function renderPeriodo(){const p=P();
   const add=document.createElement('button');add.className='sec';add.textContent='＋ Fila';add.disabled=lock;add.onclick=()=>{e.items.push({d:'',v:0});save();renderPeriodo()};
   const qp=document.createElement('button');qp.className='x';qp.textContent='Quitar del periodo';qp.disabled=lock;qp.onclick=()=>{if(confirm('¿Quitar '+per.nombre+' de este periodo?')){p.entradas.splice(ei,1);save();renderPeriodo()}};
   r.append(add,qp);d.appendChild(r);$('entradas').appendChild(d)});
- const t=document.createElement('table');t.innerHTML='<tr><th>Gasto</th><th class="v" style="text-align:right">Valor</th><th class="c">Categoría</th><th class="n">Nota</th><th></th></tr>';
+ const t=document.createElement('table');t.innerHTML='<tr><th>Gasto</th><th class="v" style="text-align:right">Valor</th><th class="c">Categoría</th><th class="n">Nota</th><th></th><th></th></tr>';
  p.egresos.forEach((it,i)=>{const tr=t.insertRow();const c=td(tr,'',filaTexto(it,'d',lock));c.style.display='flex';c.style.alignItems='center';
   c.insertAdjacentHTML('afterbegin',`<span class="dot" style="background:${CATCOL[it.cat||catDe(it.d)]};margin-left:6px"></span>`);
   td(tr,'v',filaValor(it,lock,resumen));
   const s=document.createElement('select');s.innerHTML=CATS.map(k=>`<option ${k===(it.cat||catDe(it.d))?'selected':''}>${k}</option>`).join('');s.disabled=lock;
   s.onchange=()=>{it.cat=s.value;DB.catMap[up(it.d)]=s.value;save();renderPeriodo()};td(tr,'c',s);
-  td(tr,'n',filaTexto(it,'nota',lock,'nota'));td(tr,'xx',btnX(lock,()=>{p.egresos.splice(i,1);save();renderPeriodo()}))});
+  td(tr,'n',filaTexto(it,'nota',lock,'nota'));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.egresos,i)))});
  $('salidas').appendChild(t);$('salidas').insertAdjacentHTML('beforeend','<div class="tot">Total salidas: <span class="r" id="totE"></span></div>');
  const tm=document.createElement('table');
- p.matilde.forEach((it,i)=>{const tr=tm.insertRow();td(tr,'',filaTexto(it,'d',lock));td(tr,'v',filaValor(it,lock,resumen));td(tr,'xx',btnX(lock,()=>{p.matilde.splice(i,1);save();renderPeriodo()}))});
+ p.matilde.forEach((it,i)=>{const tr=tm.insertRow();td(tr,'',filaTexto(it,'d',lock));td(tr,'v',filaValor(it,lock,resumen));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.matilde,i)))});
  if(!p.matilde.length)$('matilde').innerHTML='<p class="mut" style="margin:4px 0">Sin gastos de Matilde en este periodo.</p>';
  $('matilde').appendChild(tm);$('matilde').insertAdjacentHTML('beforeend','<div class="tot">Total Matilde: <span class="r" id="totM"></span></div>');
  resumen()}
