@@ -58,6 +58,12 @@ td input,td select{width:100%;border:1px solid transparent;background:transparen
 .av{width:32px;height:32px;border-radius:50%;background:var(--pc);display:grid;place-items:center;font-weight:800;color:#18203a;font-size:13px}
 .sub{font-weight:800;font-size:16px}
 .pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:color-mix(in srgb,var(--pc) 45%,transparent);margin-right:6px;white-space:nowrap}
+.chev{display:inline-block;transition:transform .2s;font-size:13px;opacity:.7;margin-right:6px}
+.plegada .chev{transform:rotate(-90deg)}
+.card.plegada>h2~*,.card.plegada>h2>span.row,.card.plegada>h2>span.mut{display:none!important}.card.plegada>h2{margin-bottom:0}
+.per.plegada>:not(.per-h){display:none!important}
+.card>h2>.t{cursor:pointer}
+.pill.CB{background:#8bc34a;color:#14290a}.pill.ROJA{background:#e53935;color:#fff}.pill.BLANCA{background:#fff;color:#1f2937;box-shadow:inset 0 0 0 1px #0002}
 /* quick */
 .quick{display:flex;gap:8px;margin-bottom:12px;position:relative;background:var(--in);padding:8px;border-radius:14px}.quick input:first-child{flex:1}
 .ac{position:absolute;z-index:10;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:0 12px 30px #0003;max-height:280px;overflow:auto;min-width:280px;padding:4px}
@@ -165,6 +171,12 @@ td input,td select{width:100%;border:1px solid transparent;background:transparen
  <div class="row" style="justify-content:flex-end;margin-top:12px"><a id="cpAbrir" class="sec" target="_blank" rel="noopener" style="padding:8px 11px;border-radius:10px;border:1px solid var(--bd);text-decoration:none;color:inherit">↗️ Abrir</a><button class="sec" id="cpCambiar">🔁 Reemplazar</button><button class="sec" id="cpQuitar">🗑️ Quitar</button></div>
 </div></div>
 
+<div id="dlg" class="modal hide" style="z-index:40"><div class="card" style="width:min(420px,100%)">
+ <h2 style="margin-bottom:6px"><span id="dlgTitulo"></span></h2>
+ <div id="dlgMsg" class="mut" style="line-height:1.5"></div>
+ <div class="row" style="justify-content:flex-end;margin-top:18px"><button class="sec" id="dlgNo">Cancelar</button><button class="btn" id="dlgSi">Aceptar</button></div>
+</div></div>
+
 <div id="modal" class="modal hide"><div class="card">
  <h2><span id="mTitulo">Nuevo periodo</span><button class="x" onclick="cerrarModal()" style="font-size:18px">✕</button></h2>
  <div class="atajos" id="atajos"></div>
@@ -177,6 +189,17 @@ td input,td select{width:100%;border:1px solid transparent;background:transparen
 <script>
 /* ================= utilidades ================= */
 const $=id=>document.getElementById(id);
+/* diálogos propios (en vez de confirm/alert del navegador) */
+function dialogo(msg,{titulo='¿Seguro?',si='Aceptar',no='Cancelar',peligro=false,solo=false}={}){
+ return new Promise(ok=>{const d=$('dlg'),bs=$('dlgSi'),bn=$('dlgNo');
+  $('dlgTitulo').textContent=titulo;$('dlgMsg').textContent=msg;bs.textContent=si;bn.textContent=no;bn.classList.toggle('hide',solo);
+  bs.style.background=peligro?'#f43f5e':'';bs.style.borderColor=peligro?'#f43f5e':'';
+  const fin=v=>{d.classList.add('hide');document.removeEventListener('keydown',tec);ok(v)};
+  const tec=e=>{if(e.key==='Escape')fin(false);else if(e.key==='Enter'){e.preventDefault();fin(true)}};
+  bs.onclick=()=>fin(true);bn.onclick=()=>fin(false);d.onclick=e=>{if(e.target===d)fin(false)};
+  document.addEventListener('keydown',tec);d.classList.remove('hide');bs.focus()})}
+const preguntar=(msg,o)=>dialogo(msg,o);
+const avisar=(msg,titulo='Aviso')=>dialogo(msg,{titulo,si:'Entendido',solo:true});
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const MES3=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 const CATS=['Servicios','Mercado','Restaurantes','Casa','Otros'];
@@ -236,7 +259,7 @@ async function nubeCargar(manual){if(!USR)return;if(pendiente&&!manual)return;
   estado('☁️ Al día '+hora());$('nubeInfo').textContent='Sesión: '+USR.email+' · datos del '+new Date(data.actualizado).toLocaleString('es-CO')}
  else if(!data){ // primera vez: subir lo que hay en este navegador
   migrarSemilla();
-  if(DB.periodos.length&&confirm('La nube está vacía. ¿Subir los datos que tienes en este computador ('+DB.periodos.length+' periodos)?'))await nubeGuardar();
+  if(DB.periodos.length&&await preguntar('La nube está vacía. ¿Subir los datos que tienes en este computador ('+DB.periodos.length+' periodos)?',{titulo:'☁️ Nube vacía',si:'Subir'}))await nubeGuardar();
   else{estado('☁️ Nube vacía · puedes importar un respaldo en Configuración');$('nubeInfo').textContent='Sesión: '+USR.email}}}
 async function entrar(ev){ev.preventDefault();$('lgMsg').textContent='Entrando…';
  const{data,error}=await SB.auth.signInWithPassword({email:$('lgCorreo').value.trim(),password:$('lgClave').value});
@@ -255,10 +278,10 @@ async function escribirArchivo(nombre='cuentas-datos.json',sub){
   const f=await d.getFileHandle(nombre,{create:true});const w=await f.createWritable();await w.write(JSON.stringify(DB,null,1));await w.close();
   }catch(e){console.warn('copia local',e)}}
 async function elegirCarpeta(){
- if(!window.showDirectoryPicker)return alert('Tu navegador no permite guardar en carpeta. Usa Chrome o Edge.');
+ if(!window.showDirectoryPicker)return avisar('Tu navegador no permite guardar en carpeta. Usa Chrome o Edge.');
  try{dirHandle=await showDirectoryPicker({mode:'readwrite'});dirOK=true;await kvSet('dir',dirHandle);
   try{const f=await dirHandle.getFileHandle('cuentas-datos.json');const x=JSON.parse(await (await f.getFile()).text());
-   if(x.version===2&&confirm('Encontré cuentas-datos.json en esa carpeta. ¿Cargar esos datos? (Cancelar = sobrescribirlo con los actuales)')){DB=x;renderTodo()}}catch(e){}
+   if(x.version===2&&await preguntar('Encontré cuentas-datos.json en esa carpeta. ¿Cargar esos datos o sobrescribirlos con los actuales?',{titulo:'📁 Datos encontrados',si:'Cargar esos datos',no:'Sobrescribir'})){DB=x;renderTodo()}}catch(e){}
   escribirArchivo();infoCarpeta()}catch(e){}}
 async function reconectar(){if(!dirHandle)return;if(await dirHandle.requestPermission({mode:'readwrite'})==='granted'){dirOK=true;await cargarDeArchivo();escribirArchivo();infoCarpeta()}}
 async function cargarDeArchivo(){try{const f=await dirHandle.getFileHandle('cuentas-datos.json');const x=JSON.parse(await (await f.getFile()).text());if(x.version===2){DB=x;renderTodo()}}catch(e){}}
@@ -266,7 +289,8 @@ function infoCarpeta(){$('carpetaInfo').textContent=dirHandle?'Carpeta: '+dirHan
 async function iniciarArchivo(){try{dirHandle=await kvGet('dir');if(dirHandle){dirOK=(await dirHandle.queryPermission({mode:'readwrite'}))==='granted';if(dirOK)await cargarDeArchivo()}}catch(e){dirHandle=null}
  infoCarpeta();escribirArchivo()}
 function descargarRespaldo(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,1)],{type:'application/json'}));a.download='cuentas-respaldo-'+iso(new Date())+'.json';a.click()}
-function importar(inp){const f=inp.files[0];if(!f)return;f.text().then(t=>{try{const x=JSON.parse(t);if(x.version!==2)throw 0;if(confirm('Esto reemplaza todos los datos actuales. ¿Continuar?')){DB=x;save();renderTodo()}}catch(e){alert('Archivo inválido')}});inp.value=''}
+function importar(inp){const f=inp.files[0];if(!f)return;f.text().then(async t=>{let x;try{x=JSON.parse(t);if(x.version!==2)throw 0}catch(e){return avisar('Ese archivo no es un respaldo válido de Cuentas Casa.','Archivo inválido')}
+ if(await preguntar('Esto reemplaza todos los datos actuales.',{titulo:'📥 Importar respaldo',si:'Reemplazar',peligro:true})){DB=x;save();renderTodo()}});inp.value=''}
 
 /* ================= catálogo ================= */
 function periodosOrd(){return[...DB.periodos].sort((a,b)=>a.inicio.localeCompare(b.inicio))}
@@ -289,7 +313,9 @@ function quincenas(a,b){const r=[];let d=new Date(a.getFullYear(),a.getMonth(),1
  while(d<=b){const y=d.getFullYear(),m=d.getMonth();for(const[q,i,f]of[[1,1,15],[2,16,ultimoDia(y,m)]]){const qi=new Date(y,m,i),qf=new Date(y,m,f);if(qf>=a&&qi<=b)r.push({q,ini:qi,fin:qf})}d=new Date(y,m+1,1)}return r}
 function itemsPersona(nom,a,b){const it=[];
  quincenas(a,b).forEach(x=>it.push({d:`CB ${nom} ${x.q} (${String(x.ini.getDate()).padStart(2,'0')} ${MES3[x.ini.getMonth()]} - ${x.fin.getDate()} ${MES3[x.fin.getMonth()]})`,v:0}));
- domingos(a,b).forEach((d,i)=>it.push({d:`ROJA ${i+1} ${nom} | ${d.getDate()} de ${MESES[d.getMonth()]}`,v:0}));return it}
+ const MesC=m=>MESES[m].charAt(0).toUpperCase()+MESES[m].slice(1);
+ domingos(a,b).forEach((d,i)=>{const l=new Date(d);l.setDate(l.getDate()-6);const ini=l<a?a:l;
+  it.push({d:`ROJA ${i+1} ${nom} | ${ini.getDate()} ${MesC(ini.getMonth())} ➡️ ${d.getDate()} ${MesC(d.getMonth())}`,v:0})});return it}
 function sugerirSiguiente(){const ps=periodosOrd(),u=ps[ps.length-1];const h=new Date();
  if(!u)return[new Date(h.getFullYear(),h.getMonth(),1),new Date(h.getFullYear(),h.getMonth(),ultimoDia(h.getFullYear(),h.getMonth()))];
  const a=pd(u.fin);a.setDate(a.getDate()+1);const y=a.getFullYear(),m=a.getMonth();
@@ -324,7 +350,7 @@ function pintarCal(){const v=M.vista,v2=new Date(v.getFullYear(),v.getMonth()+1,
  else{$('mRango').textContent=M.a?'Inicio: '+fCorta(M.a)+' — ahora elige el día final':'Haz clic en el día de inicio';$('mInfo').textContent='';$('mOk').disabled=true}}
 function confirmarModal(){if(!M.a||!M.b)return;const r=infoRango(M.a,M.b);
  if(M.modo==='editar'){const p=P();p.inicio=iso(M.a);p.fin=iso(M.b);p.tipo=r.tipo;p.nombre=r.nombre;cerrarModal();save();renderPeriodo();return}
- if(DB.periodos.some(p=>p.inicio===iso(M.a)&&p.fin===iso(M.b)))return alert('Ese periodo ya existe');
+ if(DB.periodos.some(p=>p.inicio===iso(M.a)&&p.fin===iso(M.b)))return avisar('Ya hay un periodo con esas mismas fechas.','Ese periodo ya existe');
  const cat=catalogo('egresos'),ult=k=>(cat.find(c=>c.nombre===k)||{}).ultimo||0;
  const p={id:uid(),nombre:r.nombre,tipo:r.tipo,inicio:iso(M.a),fin:iso(M.b),cerrado:false,
   entradas:DB.personas.filter(x=>x.activa).map(x=>({pid:x.id,items:itemsPersona(x.nombre,M.a,M.b)})),
@@ -334,7 +360,7 @@ $('modal').onclick=e=>{if(e.target===$('modal'))cerrarModal()};
 
 async function toggleCerrar(){const p=P();if(!p)return;p.cerrado=!p.cerrado;save();
  if(p.cerrado&&dirOK)await escribirArchivo('cuentas-'+p.inicio+'_'+iso(new Date())+'.json','respaldos');renderPeriodo()}
-function borrarPeriodo(){const p=P();if(!p)return;if(!confirm('¿Eliminar "'+p.nombre+'"? No se puede deshacer (salvo desde un respaldo).'))return;
+async function borrarPeriodo(){const p=P();if(!p)return;if(!await preguntar('No se puede deshacer (salvo desde un respaldo).',{titulo:'🗑️ ¿Eliminar "'+p.nombre+'"?',si:'Eliminar',peligro:true}))return;
  DB.periodos=DB.periodos.filter(x=>x!==p);const ps=periodosOrd();DB.actual=ps.length?ps[ps.length-1].id:null;save();renderTodo()}
 function agregarPersonaPeriodo(){const p=P(),id=$('addPersonaSel').value;if(!p||!id)return;const per=DB.personas.find(x=>x.id===id);
  p.entradas.push({pid:id,items:itemsPersona(per.nombre,pd(p.inicio),pd(p.fin))});save();renderPeriodo()}
@@ -371,7 +397,7 @@ async function comprimir(f){if(!f.type.startsWith('image/'))return f; // PDFs ta
  const img=await createImageBitmap(f),k=Math.min(1,1600/Math.max(img.width,img.height));
  const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
  return new Promise(ok=>c.toBlob(b=>ok(b),'image/jpeg',0.72))}
-function elegirComp(it){if(!USR)return alert('Inicia sesión para adjuntar comprobantes.');
+function elegirComp(it){if(!USR)return avisar('Inicia sesión para adjuntar comprobantes.');
  const inp=document.createElement('input');inp.type='file';inp.accept='image/*,application/pdf';
  inp.onchange=async()=>{const f=inp.files[0];if(!f)return;estado('⏳ Subiendo comprobante…');
   try{const b=await comprimir(f),ext=b.type==='application/pdf'?'pdf':'jpg',ruta=`${USR.id}/${DB.actual}/${Date.now()}.${ext}`;
@@ -379,19 +405,27 @@ function elegirComp(it){if(!USR)return alert('Inicia sesión para adjuntar compr
    const viejo=it.comp;it.comp=ruta;save();renderPeriodo();if(viejo)SB.storage.from('comprobantes').remove([viejo]);
   }catch(e){estado('⚠️ No se pudo subir: '+(e.message||e))}};inp.click()}
 async function verComp(it,lock){const{data,error}=await SB.storage.from('comprobantes').createSignedUrl(it.comp,600);
- if(error)return alert('No pude abrir el comprobante: '+error.message);
+ if(error)return avisar(error.message,'No pude abrir el comprobante');
  $('cpTitulo').textContent='🧾 '+(it.d||'Comprobante')+(it.v?' · '+fmt(it.v):'');
  $('cpCuerpo').innerHTML=it.comp.endsWith('.pdf')?`<iframe src="${data.signedUrl}" style="width:100%;height:70vh;border:0"></iframe>`:`<img src="${data.signedUrl}" style="max-width:100%;max-height:70vh;display:block;margin:auto;border-radius:10px">`;
  $('cpAbrir').href=data.signedUrl;$('cpCambiar').disabled=$('cpQuitar').disabled=lock;
  $('cpCambiar').onclick=()=>{cerrarComp();elegirComp(it)};
- $('cpQuitar').onclick=()=>{if(!confirm('¿Quitar este comprobante?'))return;SB.storage.from('comprobantes').remove([it.comp]);delete it.comp;save();cerrarComp();renderPeriodo()};
+ $('cpQuitar').onclick=async()=>{if(!await preguntar('Se borrará la imagen guardada.',{titulo:'¿Quitar este comprobante?',si:'Quitar',peligro:true}))return;SB.storage.from('comprobantes').remove([it.comp]);delete it.comp;save();cerrarComp();renderPeriodo()};
  $('comp').classList.remove('hide')}
 function cerrarComp(){$('comp').classList.add('hide');$('cpCuerpo').innerHTML=''}
 function btnComp(it,lock){const b=document.createElement('button');b.className='x';
  if(it.comp){b.textContent='🧾';b.title='Ver comprobante';b.style.color='var(--ok,#10b981)';b.onclick=()=>verComp(it,lock)}
  else{b.textContent='📎';b.title='Adjuntar comprobante (foto o captura)';b.disabled=lock;b.onclick=()=>elegirComp(it)}return b}
-function quitarFila(arr,i){const it=arr[i];if(it&&it.comp){if(!confirm('Este gasto tiene comprobante. ¿Borrar gasto y comprobante?'))return;SB.storage.from('comprobantes').remove([it.comp])}arr.splice(i,1);save();renderPeriodo()}
+async function quitarFila(arr,i){const it=arr[i];if(it&&it.comp){if(!await preguntar('Este gasto tiene comprobante. Se borrarán los dos.',{titulo:'¿Borrar gasto y comprobante?',si:'Borrar',peligro:true}))return;SB.storage.from('comprobantes').remove([it.comp])}arr.splice(i,1);save();renderPeriodo()}
 
+// pasa "ROJA 1 X | 15 de noviembre" al formato con rango "ROJA 1 X | 9 Noviembre ➡️ 15 Noviembre" (conserva el valor)
+function migrarRojas(){let cambio=false;const MesC=m=>MESES[m].charAt(0).toUpperCase()+MESES[m].slice(1);
+ DB.periodos.forEach(p=>{const a=pd(p.inicio);p.entradas.forEach(e=>e.items.forEach(it=>{
+  const m=/^(ROJA \d+ .+?) \| (\d+) de (\p{L}+)$/u.exec(it.d||'');if(!m)return;const mi=MESES.indexOf(m[3].toLowerCase());if(mi<0)return;
+  let d=new Date(a.getFullYear(),mi,+m[2]);if(d<a)d=new Date(a.getFullYear()+1,mi,+m[2]);
+  const l=new Date(d);l.setDate(l.getDate()-6);const ini=l<a?a:l;
+  it.d=`${m[1]} | ${ini.getDate()} ${MesC(ini.getMonth())} ➡️ ${d.getDate()} ${MesC(d.getMonth())}`;cambio=true}))});
+ if(cambio)save()}
 function pillDe(t){const m=/^(CB|ROJA|BLANCA)\b/i.exec(t||'');return m?m[1].toUpperCase():''}
 
 function renderPeriodo(){const p=P();
@@ -407,19 +441,28 @@ function renderPeriodo(){const p=P();
  document.querySelectorAll('.quick input,.quick button').forEach(e=>e.disabled=lock);
  $('addPersonaSel').innerHTML=DB.personas.filter(x=>!p.entradas.some(e=>e.pid===x.id)).map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
  $('addPersonaSel').parentNode.classList.toggle('hide',!$('addPersonaSel').options.length);
+ if(!p.entradas.length)$('entradas').innerHTML=DB.personas.length
+  ?'<p class="mut">Nadie tiene entradas en este periodo. Elige una persona arriba y dale <b>＋ Persona</b>.</p>'
+  :'<p class="mut">Aún no hay personas. Créalas en <a href="#" onclick="tab(\'config\');return false">⚙️ Configuración → Personas</a> y luego agrégalas aquí con <b>＋ Persona</b>.</p>';
  p.entradas.forEach((e,ei)=>{const per=DB.personas.find(x=>x.id===e.pid)||{nombre:'?',color:'#ccc'};
   const d=document.createElement('div');d.className='per';d.style.setProperty('--pc',per.color);
   d.innerHTML=`<div class="per-h"><div class="row"><span class="av">${esc(per.nombre.slice(0,2))}</span><h3>${esc(per.nombre)}</h3></div><span class="sub"></span></div>`;
+  const ph=d.querySelector('.per-h');ph.style.cursor='pointer';ph.title='Mostrar / ocultar';
+  ph.querySelector('.row').insertAdjacentHTML('afterbegin','<span class="chev">▾</span>');
+  if(plegado('per-'+e.pid))d.classList.add('plegada');
+  ph.onclick=()=>{d.classList.toggle('plegada');plegado('per-'+e.pid,d.classList.contains('plegada'))};
   const sub=d.querySelector('.sub'),upd=()=>{sub.textContent=fmt(sum(e.items));resumen()};sub.textContent=fmt(sum(e.items));
   const t=document.createElement('table');
   e.items.forEach((it,i)=>{const tr=t.insertRow();const c=td(tr,'',filaTexto(it,'d',lock));const pl=pillDe(it.d);
-   if(pl){c.style.display='flex';c.style.alignItems='center';c.insertAdjacentHTML('afterbegin',`<span class="pill">${pl}</span>`)}
+   if(pl){c.style.display='flex';c.style.alignItems='center';c.insertAdjacentHTML('afterbegin',`<span class="pill ${pl}">${pl}</span>`)}
    td(tr,'v',filaValor(it,lock,upd));td(tr,'xx',btnX(lock,()=>{e.items.splice(i,1);save();renderPeriodo()}))});
   d.appendChild(t);
   const r=document.createElement('div');r.className='row';r.style.marginTop='8px';
   const add=document.createElement('button');add.className='sec';add.textContent='＋ Fila';add.disabled=lock;add.onclick=()=>{e.items.push({d:'',v:0});save();renderPeriodo()};
-  const qp=document.createElement('button');qp.className='x';qp.textContent='Quitar del periodo';qp.disabled=lock;qp.onclick=()=>{if(confirm('¿Quitar '+per.nombre+' de este periodo?')){p.entradas.splice(ei,1);save();renderPeriodo()}};
-  r.append(add,qp);d.appendChild(r);$('entradas').appendChild(d)});
+  const qp=document.createElement('button');qp.className='x';qp.textContent='Quitar del periodo';qp.disabled=lock;qp.onclick=async()=>{if(await preguntar('Se quitarán sus entradas de este periodo.',{titulo:'¿Quitar a '+per.nombre+'?',si:'Quitar',peligro:true})){p.entradas.splice(ei,1);save();renderPeriodo()}};
+  const bl=document.createElement('button');bl.className='sec';bl.innerHTML='＋ <span class="pill BLANCA" style="margin:0">BLANCA</span>';bl.disabled=lock;
+  bl.onclick=()=>{const n=e.items.filter(x=>pillDe(x.d)==='BLANCA').length+1;e.items.push({d:`BLANCA ${n} ${per.nombre}`,v:0});save();renderPeriodo()};
+  r.append(add,bl,qp);d.appendChild(r);$('entradas').appendChild(d)});
  const t=document.createElement('table');t.innerHTML='<tr><th>Gasto</th><th class="v" style="text-align:right">Valor</th><th class="c">Categoría</th><th class="n">Nota</th><th></th><th></th></tr>';
  p.egresos.forEach((it,i)=>{const tr=t.insertRow();const c=td(tr,'',filaTexto(it,'d',lock));c.style.display='flex';c.style.alignItems='center';
   c.insertAdjacentHTML('afterbegin',`<span class="dot" style="background:${CATCOL[it.cat||catDe(it.d)]};margin-left:6px"></span>`);
@@ -484,6 +527,11 @@ function tab(t){document.querySelectorAll('.tabs button').forEach(b=>b.classList
  ['periodo','historial','config'].forEach(x=>$('t-'+x).classList.toggle('hide',x!==t));
  if(t==='periodo')renderPeriodo();if(t==='historial')renderHist();if(t==='config')renderConfig()}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
-function renderTodo(){tab(document.querySelector('.tabs button.on').dataset.t)}
+/* secciones plegables (se recuerda en este navegador) */
+function plegado(k,v){try{const o=JSON.parse(localStorage.getItem('cuentasPlegado')||'{}');if(v===undefined)return!!o[k];o[k]=v;localStorage.setItem('cuentasPlegado',JSON.stringify(o))}catch(e){return false}}
+document.querySelectorAll('#contenido .card>h2>.t').forEach((t,i)=>{const c=t.closest('.card'),k='card-'+t.textContent.trim();
+ t.insertAdjacentHTML('afterbegin','<span class="chev">▾</span>');t.title='Mostrar / ocultar';if(plegado(k))c.classList.add('plegada');
+ t.onclick=()=>{c.classList.toggle('plegada');plegado(k,c.classList.contains('plegada'))}});
+function renderTodo(){migrarRojas();tab(document.querySelector('.tabs button.on').dataset.t)}
 renderTodo();iniciarNube();iniciarArchivo();
 </script></body></html>
