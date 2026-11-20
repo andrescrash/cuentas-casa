@@ -32,9 +32,9 @@ h3{font-size:14px;margin:0}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mut{color:var(--mut)}
 .hide{display:none!important}
 #entradas a{color:var(--pri);font-weight:600}
-#entradas tr.ro input:disabled{opacity:1;color:var(--tx);cursor:default;-webkit-text-fill-color:var(--tx)}#entradas tr.ro td.v input:disabled{color:var(--tx)}
-#entradas tr.editando td{background:color-mix(in srgb,var(--pri) 7%,transparent)}#entradas tr.editando input{border-color:var(--bd)}
-.lapiz{font-size:14px}#entradas tr.editando .lapiz{color:var(--ok);font-weight:800;font-size:16px}
+#contenido tr.ro input:disabled,#contenido tr.ro select:disabled{opacity:1;color:var(--tx);cursor:default;-webkit-text-fill-color:var(--tx)}#contenido tr.ro select:disabled{appearance:none;-webkit-appearance:none;background:none}
+#contenido tr.editando td{background:color-mix(in srgb,var(--pri) 7%,transparent)}#contenido tr.editando input,#contenido tr.editando select{border-color:var(--bd)}
+.lapiz{font-size:14px}#contenido tr.editando .lapiz{color:var(--ok);font-weight:800;font-size:16px}
 .gal-n{background:var(--ok);color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:2px}
 /* barra del periodo */
 .pbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -557,6 +557,7 @@ const hora=()=>new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-d
 async function nubeGuardar(){if(!USR||!LISTO||guardando)return;guardando=true;
  try{const ahora=new Date().toISOString();let r;
   // solo se guarda si la nube sigue en la versión que cargamos; si otro dispositivo guardó antes, no se pisa
+  if(!MAT.ok&&MODO==='dueno'&&Date.now()-(MAT.intento||0)>60000){MAT.intento=Date.now();await cargarMatilde();if(MAT.ok)renderTodo()}// la tabla pudo crearse después de abrir la app
   const datos=datosParaNube();
   if(VER)r=await SB.from('cuentas').update({datos,actualizado:ahora}).eq('usuario',USR.id).eq('actualizado',VER).select('actualizado');
   else r=await SB.from('cuentas').upsert({usuario:USR.id,datos,actualizado:ahora}).select('actualizado');
@@ -633,7 +634,7 @@ async function iniciarNube(){const{data}=await SB.auth.getSession();
 // al volver a la app (p. ej. del celular al PC) traer lo último
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return;
  if(MODO==='matilde')return cargarVistaMatilde();
- nubeCargar().then(async()=>{if(MAT.ok&&!pendiente){await cargarMatilde();renderTodo()}})});
+ nubeCargar().then(async()=>{if(!pendiente&&LISTO){const antes=MAT.ok;await cargarMatilde();renderTodo();if(MAT.ok&&!antes)save();else if(MAT.ok)syncCompartido()}})});
 window.addEventListener('beforeunload',e=>{if(pendiente){nubeGuardar();e.preventDefault()}});
 
 async function escribirArchivo(nombre='cuentas-datos.json',sub){
@@ -778,6 +779,13 @@ function filaTexto(it,campo,lock,ph){const i=document.createElement('input');i.v
 function filaGastoCat(tr,it,lock){const k=canon(it.cat||catDe(it.d));const c=td(tr,'',filaTexto(it,'d',lock));c.style.display='flex';c.style.alignItems='center';
  c.insertAdjacentHTML('afterbegin',chipCat(k));td(tr,'v',filaValor(it,lock,resumen));
  const s=document.createElement('select');s.innerHTML=optsCat(k);s.disabled=lock;s.onchange=()=>{it.cat=s.value;DB.catMap[up(it.d)]=s.value;save();renderPeriodo()};td(tr,'c',s)}
+// filas bloqueadas: solo se editan tras tocar ✏️ (✓ o Enter las vuelve a bloquear)
+function filaRO(tr,it,lock){const abierta=!lock&&EDIT.has(it);tr.classList.toggle('ro',!lock&&!abierta);tr.classList.toggle('editando',abierta);return lock||!abierta}
+function btnLapiz(tr,it,lock){const abierta=!lock&&EDIT.has(it),b=document.createElement('button');b.className='x lapiz';b.disabled=lock;
+ b.textContent=abierta?'✓':'✏️';b.title=abierta?'Listo':'Editar';
+ b.onclick=()=>{if(abierta){EDIT.delete(it);renderPeriodo()}else{EDIT.add(it);renderPeriodo();const f=document.querySelector('#contenido tr.editando td.v input');if(f)f.focus()}};
+ if(abierta)setTimeout(()=>tr.querySelectorAll('input:not([type=file])').forEach(x=>x.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.target.blur();EDIT.delete(it);setTimeout(renderPeriodo,0)}})),0);
+ return b}
 function td(tr,cls,el){const c=tr.insertCell();if(cls)c.className=cls;if(el)c.appendChild(el);return c}
 function btnX(lock,fn){const b=document.createElement('button');b.className='x';b.textContent='✕';b.title='Quitar';b.disabled=lock;b.onclick=fn;return b}
 /* ================= comprobantes ================= */
@@ -962,20 +970,20 @@ function renderPeriodo(){const p=P();
   add.onclick=()=>{add.classList.add('hide');menu.classList.remove('hide')};
   const qp=document.createElement('button');qp.className='x';qp.textContent='Quitar del periodo';qp.disabled=lock;qp.onclick=async()=>{if(await preguntar('Se quitarán sus entradas de este periodo.',{titulo:'¿Quitar a '+per.nombre+'?',si:'Quitar',peligro:true})){p.entradas.splice(ei,1);save();renderPeriodo()}};
   r.append(add,menu,qp);d.appendChild(r);$('entradas').appendChild(d)});
- const t=document.createElement('table');t.innerHTML='<tr><th>Gasto</th><th class="v" style="text-align:right">Valor</th><th class="c">Categoría</th><th class="n">Nota</th><th></th><th></th></tr>';
- p.egresos.forEach((it,i)=>{const tr=t.insertRow();const c=td(tr,'',filaTexto(it,'d',lock));c.style.display='flex';c.style.alignItems='center';
+ const t=document.createElement('table');t.innerHTML='<tr><th>Gasto</th><th class="v" style="text-align:right">Valor</th><th class="c">Categoría</th><th class="n">Nota</th><th></th><th></th><th></th></tr>';
+ p.egresos.forEach((it,i)=>{const tr=t.insertRow();const ro=filaRO(tr,it,lock);const c=td(tr,'',filaTexto(it,'d',ro));c.style.display='flex';c.style.alignItems='center';
   c.insertAdjacentHTML('afterbegin',chipCat(canon(it.cat||catDe(it.d))));
-  td(tr,'v',filaValor(it,lock,resumen));
-  const s=document.createElement('select');s.innerHTML=optsCat(canon(it.cat||catDe(it.d)));s.disabled=lock;
+  td(tr,'v',filaValor(it,ro,resumen));
+  const s=document.createElement('select');s.innerHTML=optsCat(canon(it.cat||catDe(it.d)));s.disabled=ro;
   s.onchange=()=>{it.cat=s.value;DB.catMap[up(it.d)]=s.value;save();renderPeriodo()};td(tr,'c',s);
-  td(tr,'n',filaTexto(it,'nota',lock,'nota'));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.egresos,i)))});
+  td(tr,'n',filaTexto(it,'nota',ro,ro?'':'nota'));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnLapiz(tr,it,lock));td(tr,'xx',btnX(lock,()=>{EDIT.delete(it);quitarFila(p.egresos,i)}))});
  $('salidas').appendChild(t);$('salidas').insertAdjacentHTML('beforeend','<div class="tot">Total egresos: <span class="r" id="totE"></span></div>');
  const tm=document.createElement('table');
- p.matilde.forEach((it,i)=>{const tr=tm.insertRow();filaGastoCat(tr,it,lock);td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.matilde,i)))});
+ p.matilde.forEach((it,i)=>{const tr=tm.insertRow();filaGastoCat(tr,it,filaRO(tr,it,lock));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnLapiz(tr,it,lock));td(tr,'xx',btnX(lock,()=>{EDIT.delete(it);quitarFila(p.matilde,i)}))});
  if(!p.matilde.length)$('matilde').innerHTML='<p class="mut" style="margin:4px 0">Sin gastos de Matilde en este periodo.</p>';
  $('matilde').appendChild(tm);$('matilde').insertAdjacentHTML('beforeend','<div class="tot">Total Matilde: <span class="r" id="totM"></span></div>');
  const ta=document.createElement('table');
- p.andres.forEach((it,i)=>{const tr=ta.insertRow();filaGastoCat(tr,it,lock);td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.andres,i)))});
+ p.andres.forEach((it,i)=>{const tr=ta.insertRow();filaGastoCat(tr,it,filaRO(tr,it,lock));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnLapiz(tr,it,lock));td(tr,'xx',btnX(lock,()=>{EDIT.delete(it);quitarFila(p.andres,i)}))});
  if(!p.andres.length)$('andres').innerHTML='<p class="mut" style="margin:4px 0">Sin gastos de Andrés en este periodo.</p>';
  $('andres').appendChild(ta);$('andres').insertAdjacentHTML('beforeend','<div class="tot">Total Andrés: <span class="r" id="totA"></span></div>');
  resumen()}
