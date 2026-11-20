@@ -1,6 +1,12 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Cuentas Casa</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e1220">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Cuentas">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3f5fb;--card:#ffffff;--card2:#f7f8fc;--tx:#18203a;--mut:#7a839c;--bd:#e6e9f2;--pri:#5b5bf6;--pri2:#8b5cf6;--ok:#12a26b;--okbg:#e3f7ee;--bad:#e5484d;--badbg:#fdecec;--sh:0 1px 2px #18203a0d,0 8px 24px #18203a0f;--in:#f3f5fb}
@@ -349,6 +355,7 @@ body.modo-matilde main{max-width:720px}
   <div class="dr-est" id="drEstado"></div>
   <button class="dr-it" onclick="$('tema').click();pintarMenu()"><span id="drTemaI">🌙</span><span id="drTemaT">Tema oscuro</span></button>
   <button class="dr-it" onclick="menu(false);nubeCargar(true)"><span>🔄</span>Recargar de la nube</button>
+  <button class="dr-it hide" id="drInstalar" onclick="menu(false);instalar()"><span>📲</span>Instalar en el celular</button>
   <div class="mut dr-mail" id="drMail"></div>
   <button class="dr-it peligro" onclick="menu(false);salir()"><span>🚪</span>Cerrar sesión</button>
  </div>
@@ -440,6 +447,7 @@ body.modo-matilde main{max-width:720px}
   </div>
  </div>
  <div class="card"><h2><span class="t"><i style="background:color-mix(in srgb,#d946ef 18%,transparent)">👩</i>Mis gastos</span></h2><div id="mtLista"></div></div>
+ <button class="sec hide" id="mtInstalar" onclick="instalar()" style="width:100%;margin:4px 0 8px">📲 Instalar en el celular</button>
  <button class="sec" onclick="salir()" style="width:100%;margin-top:4px">🚪 Cerrar sesión</button>
 </section>
 </main>
@@ -1255,6 +1263,19 @@ async function guardarItemM(it,cambio){const r=await SB.from('gastos_matilde').u
    if(r.error)throw r.error;VM.items.push({id:r.data.id,d:r.data.d,v:+r.data.v,cat:r.data.cat||'',comp:r.data.comp||''});
    d.value='';v.value='';VM.foto=null;pintarCam();estado('☁️ Guardado '+hora());pintarVistaMatilde();d.focus()}
   catch(e){avisar(e.message||String(e),'No se pudo guardar')}finally{b.disabled=false}}})();
+/* ---- app instalable (PWA) ---- */
+let pedidoInstalar=null;
+const yaInstalada=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const esIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);
+function mostrarInstalar(){const ver=!yaInstalada()&&(!!pedidoInstalar||esIOS());$('drInstalar').classList.toggle('hide',!ver);if($('mtInstalar'))$('mtInstalar').classList.toggle('hide',!ver)}
+async function instalar(){
+ if(pedidoInstalar){pedidoInstalar.prompt();const r=await pedidoInstalar.userChoice;pedidoInstalar=null;mostrarInstalar();if(r.outcome==='accepted')estado('📲 App instalada');return}
+ if(esIOS())return avisar('En Safari toca el botón Compartir (el cuadrito con la flecha hacia arriba) y luego "Agregar a pantalla de inicio".','📲 Instalar en iPhone');
+ avisar('Abre el menú ⋮ del navegador y elige "Instalar app" o "Agregar a pantalla de inicio".','📲 Instalar')}
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();pedidoInstalar=e;mostrarInstalar()});
+addEventListener('appinstalled',()=>{pedidoInstalar=null;mostrarInstalar()});
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+mostrarInstalar();
 seccion(PS);// después de montar los plegables
 renderTodo();iniciarNube();iniciarArchivo();
 </script></body></html>
