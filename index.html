@@ -121,15 +121,18 @@ td input,td select{width:100%;border:1px solid transparent;background:transparen
  <div class="kpis" id="kpis"></div>
  <div class="grid"><div>
   <div class="card"><h2><span class="t"><i style="background:var(--okbg)">💵</i>Entradas</span><span class="row"><select id="addPersonaSel"></select><button class="sec" onclick="agregarPersonaPeriodo()">＋ Persona</button></span></h2><div id="entradas"></div></div>
-  <div class="card"><h2><span class="t"><i style="background:var(--badbg)">🧾</i>Salidas</span><span class="mut" style="font-weight:500;font-size:12px">Escribe, Enter y Enter: sugiere lo más usado</span></h2>
+  <div class="card"><h2><span class="t"><i style="background:var(--badbg)">🧾</i>Egresos</span><span class="mut" style="font-weight:500;font-size:12px">Escribe, Enter y Enter: sugiere lo más usado</span></h2>
    <div class="quick" id="qE"><input placeholder="🔎 Gasto (ej: costillas)"><input class="v" placeholder="$0" inputmode="numeric" style="width:140px;text-align:right"><button class="btn">Agregar</button></div>
    <div id="salidas"></div></div>
   <div class="card"><h2><span class="t"><i style="background:color-mix(in srgb,#d946ef 18%,transparent)">👩</i>Gastos de Matilde</span></h2>
    <div class="quick" id="qM"><input placeholder="🔎 Gasto de Matilde"><input class="v" placeholder="$0" inputmode="numeric" style="width:140px;text-align:right"><button class="btn">Agregar</button></div>
    <div id="matilde"></div></div>
+  <div class="card"><h2><span class="t"><i style="background:color-mix(in srgb,#6366f1 18%,transparent)">👨</i>Gastos de Andrés</span></h2>
+   <div class="quick" id="qA"><input placeholder="🔎 Gasto de Andrés"><input class="v" placeholder="$0" inputmode="numeric" style="width:140px;text-align:right"><button class="btn">Agregar</button></div>
+   <div id="andres"></div></div>
  </div><div>
   <div class="card"><h2><span class="t"><i style="background:var(--in)">🧮</i>Resumen</span></h2><div id="resumen"></div></div>
-  <div class="card"><h2><span class="t"><i style="background:var(--in)">🍩</i>Salidas por categoría</span></h2><div id="cats"></div></div>
+  <div class="card"><h2><span class="t"><i style="background:var(--in)">🍩</i>Egresos por categoría</span></h2><div id="cats"></div></div>
   <div class="card"><h2><span class="t"><i style="background:var(--in)">👥</i>Ingresos por persona</span></h2><div id="porPer"></div></div>
  </div></div></div>
 </section>
@@ -297,7 +300,7 @@ function periodosOrd(){return[...DB.periodos].sort((a,b)=>a.inicio.localeCompare
 function catalogo(tipo){const c={};
  const S=SEM(),SM=SEMM();
  if(tipo==='egresos')for(const k in S)c[k]={nombre:k,usos:0,ultimo:S[k][1]};else for(const k in SM)c[k]={nombre:k,usos:0,ultimo:SM[k]};
- for(const p of periodosOrd())for(const it of p[tipo]){const k=up(it.d);if(!k)continue;c[k]=c[k]||{nombre:k,usos:0,ultimo:0};c[k].usos++;if(num(it.v))c[k].ultimo=num(it.v)}
+ for(const p of periodosOrd())for(const it of (p[tipo]||[])){const k=up(it.d);if(!k)continue;c[k]=c[k]||{nombre:k,usos:0,ultimo:0};c[k].usos++;if(num(it.v))c[k].ultimo=num(it.v)}
  return Object.values(c).sort((a,b)=>b.usos-a.usos||a.nombre.localeCompare(b.nombre))}
 function catDe(n){const k=up(n);const S=SEM();return DB.catMap[k]||(S[k]&&S[k][0])||'Otros'}
 
@@ -355,7 +358,7 @@ function confirmarModal(){if(!M.a||!M.b)return;const r=infoRango(M.a,M.b);
  const cat=catalogo('egresos'),ult=k=>(cat.find(c=>c.nombre===k)||{}).ultimo||0;
  const p={id:uid(),nombre:r.nombre,tipo:r.tipo,inicio:iso(M.a),fin:iso(M.b),cerrado:false,
   entradas:DB.personas.filter(x=>x.activa).map(x=>({pid:x.id,items:itemsPersona(x.nombre,M.a,M.b)})),
-  egresos:DB.fijos.map(f=>({d:f,v:ult(f),cat:catDe(f)})),matilde:[]};
+  egresos:DB.fijos.map(f=>({d:f,v:ult(f),cat:catDe(f)})),matilde:[],andres:[]};
  DB.periodos.push(p);DB.actual=p.id;cerrarModal();save();renderTodo()}
 $('modal').onclick=e=>{if(e.target===$('modal'))cerrarModal()};
 
@@ -385,7 +388,7 @@ function montarRapido(id,tipo){const q=$(id),[n,v,b]=q.querySelectorAll('input,b
   const it={d:up(n.value),v:num(v.value)};if(tipo==='egresos')it.cat=catDe(it.d);p[tipo].push(it);n.value='';v.value='';save();renderPeriodo();$(id).querySelector('input').focus()};
  n.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();v.focus()}});
  v.addEventListener('keydown',e=>{if(e.key==='Enter')agregar()});v.addEventListener('blur',()=>{if(v.value)v.value=fmt(num(v.value))});b.onclick=agregar}
-montarRapido('qE','egresos');montarRapido('qM','matilde');
+montarRapido('qE','egresos');montarRapido('qM','matilde');montarRapido('qA','andres');
 
 /* ================= render periodo ================= */
 function filaValor(it,lock,onch){const i=document.createElement('input');i.inputMode='numeric';i.placeholder='$0';i.value=it.v?fmt(it.v):'';i.disabled=lock;
@@ -440,7 +443,8 @@ function renderPeriodo(){const p=P();
  $('vacio').classList.toggle('hide',!!p);$('contenido').classList.toggle('hide',!p);
  ['btnFechas','btnCerrar'].forEach(i=>$(i).disabled=!p);
  if(!p){$('rangoPer').textContent='';$('tagPer').textContent='';return}
- ['entradas','salidas','matilde'].forEach(i=>$(i).innerHTML='');
+ if(!p.andres)p.andres=[];
+ ['entradas','salidas','matilde','andres'].forEach(i=>$(i).innerHTML='');
  const lock=p.cerrado,a=pd(p.inicio),b=pd(p.fin);
  $('rangoPer').innerHTML=`📅 ${fCorta(a)} ${a.getFullYear()} → ${fCorta(b)} ${b.getFullYear()} · ${Math.round((b-a)/864e5)+1} días`;
  $('tagPer').textContent=lock?'Cerrado':cap(p.tipo);$('tagPer').className='tag'+(lock?' cerr':'');
@@ -482,16 +486,20 @@ function renderPeriodo(){const p=P();
   const s=document.createElement('select');s.innerHTML=CATS.map(k=>`<option ${k===(it.cat||catDe(it.d))?'selected':''}>${k}</option>`).join('');s.disabled=lock;
   s.onchange=()=>{it.cat=s.value;DB.catMap[up(it.d)]=s.value;save();renderPeriodo()};td(tr,'c',s);
   td(tr,'n',filaTexto(it,'nota',lock,'nota'));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.egresos,i)))});
- $('salidas').appendChild(t);$('salidas').insertAdjacentHTML('beforeend','<div class="tot">Total salidas: <span class="r" id="totE"></span></div>');
+ $('salidas').appendChild(t);$('salidas').insertAdjacentHTML('beforeend','<div class="tot">Total egresos: <span class="r" id="totE"></span></div>');
  const tm=document.createElement('table');
  p.matilde.forEach((it,i)=>{const tr=tm.insertRow();td(tr,'',filaTexto(it,'d',lock));td(tr,'v',filaValor(it,lock,resumen));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.matilde,i)))});
  if(!p.matilde.length)$('matilde').innerHTML='<p class="mut" style="margin:4px 0">Sin gastos de Matilde en este periodo.</p>';
  $('matilde').appendChild(tm);$('matilde').insertAdjacentHTML('beforeend','<div class="tot">Total Matilde: <span class="r" id="totM"></span></div>');
+ const ta=document.createElement('table');
+ p.andres.forEach((it,i)=>{const tr=ta.insertRow();td(tr,'',filaTexto(it,'d',lock));td(tr,'v',filaValor(it,lock,resumen));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.andres,i)))});
+ if(!p.andres.length)$('andres').innerHTML='<p class="mut" style="margin:4px 0">Sin gastos de Andrés en este periodo.</p>';
+ $('andres').appendChild(ta);$('andres').insertAdjacentHTML('beforeend','<div class="tot">Total Andrés: <span class="r" id="totA"></span></div>');
  resumen()}
 
 function calc(p){const porP=p.entradas.map(e=>{const x=DB.personas.find(y=>y.id===e.pid)||{};return{nombre:x.nombre||'?',color:x.color||'#ccc',t:sum(e.items)}});
- const ti=porP.reduce((s,x)=>s+x.t,0),te=sum(p.egresos),tm=sum(p.matilde),ie=ti-te,mitad=ie/2;
- return{porP,ti,te,tm,ie,mitad,andres:mitad,matilde:mitad-tm}}
+ const ti=porP.reduce((s,x)=>s+x.t,0),te=sum(p.egresos),tm=sum(p.matilde),ta=sum(p.andres||[]),ie=ti-te,mitad=ie/2;
+ return{porP,ti,te,tm,ta,ie,mitad,andres:mitad-ta,matilde:mitad-tm}}
 function donut(datos,total){const R=54,C=2*Math.PI*R;let off=0;
  const segs=datos.map(([k,v])=>{const l=total?v/total*C:0;const s=`<circle r="${R}" cx="70" cy="70" fill="none" stroke="${CATCOL[k]}" stroke-width="20" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"/>`;off+=l;return s}).join('');
  return`<svg width="140" height="140" viewBox="0 0 140 140"><circle r="${R}" cx="70" cy="70" fill="none" stroke="var(--in)" stroke-width="20"/>${segs}<text x="70" y="66" text-anchor="middle" font-size="11" fill="var(--mut)">Total</text><text x="70" y="84" text-anchor="middle" font-size="15" font-weight="800" fill="var(--tx)">${corto(total)}</text></svg>`}
@@ -499,17 +507,18 @@ function resumen(){const p=P();if(!p)return;const c=calc(p);
  $('kpis').innerHTML=`
  <div class="kpi k1"><small><i>💵</i>Total ingresos</small><div class="val">${fmt(c.ti)}</div><div class="sub2">${c.porP.length} personas</div></div>
  <div class="kpi k2"><small><i>🧾</i>Total egresos</small><div class="val">${fmt(c.te)}</div><div class="sub2">${p.egresos.length} gastos · ${c.ti?Math.round(c.te/c.ti*100):0}% de lo que entró</div></div>
- <div class="kpi k3"><small><i>👨</i>Ganancia Andrés</small><div class="val">${fmt(c.andres)}</div><div class="sub2">La mitad de ${fmt(c.ie)}</div></div>
+ <div class="kpi k3"><small><i>👨</i>Ganancia Andrés</small><div class="val">${fmt(c.andres)}</div><div class="sub2">Mitad − ${fmt(c.ta)} de sus gastos</div></div>
  <div class="kpi k4"><small><i>👩</i>Ganancia Matilde</small><div class="val">${fmt(c.matilde)}</div><div class="sub2">Mitad − ${fmt(c.tm)} de sus gastos</div></div>`;
  $('resumen').innerHTML=`<div><span>Total ingresos</span><b class="g">${fmt(c.ti)}</b></div><div><span>Total egresos</span><b class="r">− ${fmt(c.te)}</b></div>
  <div><span>Ingresos − Egresos</span><b>${fmt(c.ie)}</b></div><div><span>Dividido entre 2</span><b>${fmt(c.mitad)}</b></div>
  <div><span>Gastos de Matilde</span><b class="r">− ${fmt(c.tm)}</b></div>
+ <div><span>Gastos de Andrés</span><b class="r">− ${fmt(c.ta)}</b></div>
  <div class="big"><span>👨 Andrés</span><span class="g">${fmt(c.andres)}</span></div><div class="big" style="border:none"><span>👩 Matilde</span><span class="g">${fmt(c.matilde)}</span></div>`;
  const pc={};p.egresos.forEach(i=>{const k=i.cat||catDe(i.d);pc[k]=(pc[k]||0)+num(i.v)});const ds=Object.entries(pc).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
- $('cats').innerHTML=ds.length?`<div class="donut">${donut(ds,c.te)}<div class="leg" style="flex:1">${ds.map(([k,v])=>`<div><span><span class="dot" style="background:${CATCOL[k]}"></span>${k}</span><b>${Math.round(v/c.te*100)}%</b></div>`).join('')}</div></div>`:'<p class="mut">Sin salidas todavía.</p>';
+ $('cats').innerHTML=ds.length?`<div class="donut">${donut(ds,c.te)}<div class="leg" style="flex:1">${ds.map(([k,v])=>`<div><span><span class="dot" style="background:${CATCOL[k]}"></span>${k}</span><b>${Math.round(v/c.te*100)}%</b></div>`).join('')}</div></div>`:'<p class="mut">Sin egresos todavía.</p>';
  const mx=Math.max(1,...c.porP.map(x=>x.t));
  $('porPer').innerHTML=c.porP.map(x=>`<div class="hbar"><div class="row"><span><span class="dot" style="background:${x.color}"></span>${esc(x.nombre)}</span><b>${fmt(x.t)}</b></div><div class="tr"><i style="width:${x.t/mx*100}%;background:${x.color}"></i></div></div>`).join('')||'<p class="mut">Sin personas.</p>';
- if($('totE'))$('totE').textContent=fmt(c.te);if($('totM'))$('totM').textContent=fmt(c.tm)}
+ if($('totE'))$('totE').textContent=fmt(c.te);if($('totM'))$('totM').textContent=fmt(c.tm);if($('totA'))$('totA').textContent=fmt(c.ta)}
 $('selPer').onchange=e=>{DB.actual=e.target.value;save();renderPeriodo()};
 
 /* ================= historial ================= */
@@ -517,8 +526,8 @@ function renderHist(){const ps=periodosOrd();
  if(!ps.length){$('hist').innerHTML='<p class="mut">Aún no hay periodos.</p>';$('histChart').innerHTML='';return}
  const cs=ps.map(p=>({p,c:calc(p)})),mx=Math.max(1,...cs.flatMap(x=>[x.c.ti,x.c.te]));
  $('histChart').innerHTML='<div class="hc">'+cs.map(({p,c})=>`<div class="col" title="${esc(p.nombre)}"><div class="bars">${[[c.ti,'#10b981'],[c.te,'#f43f5e'],[c.andres,'#6366f1'],[c.matilde,'#d946ef']].map(([v,col])=>`<i style="height:${Math.max(2,v/mx*160)}px;background:${col}" title="${fmt(v)}"></i>`).join('')}</div><small>${esc(p.nombre)}</small></div>`).join('')+'</div>';
- $('hist').innerHTML=`<table><tr><th>Periodo</th><th>Tipo</th><th style="text-align:right">Ingresos</th><th style="text-align:right">Egresos</th><th style="text-align:right">Gastos Matilde</th><th style="text-align:right">Andrés</th><th style="text-align:right">Matilde</th></tr>`+
- cs.reverse().map(({p,c})=>`<tr><td><a href="#" style="color:var(--pri);font-weight:700" onclick="DB.actual='${p.id}';save();tab('periodo');return false">${esc(p.nombre)}</a></td><td>${cap(p.tipo)}${p.cerrado?' 🔒':''}</td><td style="text-align:right" class="g">${fmt(c.ti)}</td><td style="text-align:right" class="r">${fmt(c.te)}</td><td style="text-align:right">${fmt(c.tm)}</td><td style="text-align:right"><b>${fmt(c.andres)}</b></td><td style="text-align:right"><b>${fmt(c.matilde)}</b></td></tr>`).join('')+'</table>'}
+ $('hist').innerHTML=`<table><tr><th>Periodo</th><th>Tipo</th><th style="text-align:right">Ingresos</th><th style="text-align:right">Egresos</th><th style="text-align:right">Gastos Matilde</th><th style="text-align:right">Gastos Andrés</th><th style="text-align:right">Andrés</th><th style="text-align:right">Matilde</th></tr>`+
+ cs.reverse().map(({p,c})=>`<tr><td><a href="#" style="color:var(--pri);font-weight:700" onclick="DB.actual='${p.id}';save();tab('periodo');return false">${esc(p.nombre)}</a></td><td>${cap(p.tipo)}${p.cerrado?' 🔒':''}</td><td style="text-align:right" class="g">${fmt(c.ti)}</td><td style="text-align:right" class="r">${fmt(c.te)}</td><td style="text-align:right">${fmt(c.tm)}</td><td style="text-align:right">${fmt(c.ta)}</td><td style="text-align:right"><b>${fmt(c.andres)}</b></td><td style="text-align:right"><b>${fmt(c.matilde)}</b></td></tr>`).join('')+'</table>'}
 
 /* ================= configuración ================= */
 function renderConfig(){$('cfgPersonas').innerHTML='';const t=document.createElement('table');
