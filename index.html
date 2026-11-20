@@ -148,6 +148,7 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
 .vz-img{max-width:100%;max-height:100%;border-radius:12px;box-shadow:0 30px 80px #000c;user-select:none;-webkit-user-drag:none;animation:vzIn .35s cubic-bezier(.2,.8,.2,1)}
 .vz-pdf{width:min(900px,100%);height:100%;border:0;border-radius:12px;background:#fff}
 @keyframes vzIn{from{transform:scale(.92);opacity:0}}
+@keyframes psIn{from{opacity:0;transform:translateX(var(--psx,0))}}
 .vz-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:48px;height:48px;border-radius:50%;background:#ffffff1a;border:1px solid #ffffff2a;color:#fff;font-size:28px;line-height:1;padding:0;display:grid;place-items:center;backdrop-filter:blur(6px)}
 .vz-nav:hover{background:#ffffff33}.vz-nav.prev{left:14px}.vz-nav.next{right:14px}
 .vz-hint{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:12px;opacity:.5;pointer-events:none;white-space:nowrap}
@@ -312,6 +313,17 @@ body.modo-matilde main{max-width:720px}
  .mt-hero{padding:12px 14px;margin-bottom:8px;border-radius:14px}
  .empty{padding:24px 12px}
  #entradas td input{padding:3px 6px}#entradas td.v input{padding:3px 6px}#entradas .x{padding:2px 6px}
+ /* pestañas de secciones (solo celular) */
+ #ptabs{display:flex!important;gap:2px;position:sticky;top:calc(48px + env(safe-area-inset-top));z-index:12;margin:0 -8px 8px;padding:0 8px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--bd)}
+ #ptabs::-webkit-scrollbar{display:none}
+ #ptabs button{flex:1 0 auto;border:none;background:none;border-radius:0;padding:11px 8px 9px;font-size:13.5px;font-weight:700;color:var(--mut);border-bottom:3px solid transparent;white-space:nowrap}
+ #ptabs button.on{color:var(--tc);border-bottom-color:var(--tc)}
+ #contenido .card[data-sec]:not(.ps-on){display:none}
+ #contenido .card[data-sec]>h2.pleg{pointer-events:none;margin:0 0 8px;padding:0;background:none}#contenido .card[data-sec]>h2.pleg *{pointer-events:auto}
+ #contenido .card[data-sec]>h2.pleg>.t{display:none}
+ #contenido .card[data-sec]>h2.pleg:not(:has(.row)){display:none}
+ #contenido .card[data-sec=resumen]>h2.pleg{display:flex}#contenido .card[data-sec=resumen]>h2.pleg>.t{display:flex}
+ #contenido .ps-anim{animation:psIn .22s ease}
  .per .row{margin-top:4px!important}.per .row button.sec{min-height:34px;padding:4px 10px}
 }
 </style></head><body>
@@ -361,21 +373,22 @@ body.modo-matilde main{max-width:720px}
  <div id="vacio" class="card empty hide"><b>🗓️</b><h2 style="justify-content:center">Aún no hay periodos</h2><p class="mut">Crea el primero y elige las fechas en el calendario.</p><button class="btn" onclick="abrirNuevo()">＋ Nuevo periodo</button></div>
  <div id="contenido">
  <div class="kpis" id="kpis"></div>
+ <nav class="ptabs solo-movil" id="ptabs"><button data-s="entradas" style="--tc:#10b981">Entradas</button><button data-s="egresos" style="--tc:#f43f5e">Egresos</button><button data-s="matilde" style="--tc:#d946ef">Matilde</button><button data-s="andres" style="--tc:#6366f1">Andrés</button><button data-s="resumen" style="--tc:var(--pri)">Resumen</button></nav>
  <div class="grid"><div>
-  <div class="card"><h2><span class="t"><i style="background:var(--okbg)">💵</i>Entradas</span><span class="row"><select id="addPersonaSel"></select><button class="sec" onclick="agregarPersonaPeriodo()">＋ Persona</button></span></h2><div id="entradas"></div></div>
-  <div class="card"><h2><span class="t"><i style="background:var(--badbg)">🧾</i>Egresos</span><span class="mut" style="font-weight:500;font-size:12px">Escribe, Enter y Enter: sugiere lo más usado</span></h2>
+  <div class="card" data-sec="entradas"><h2><span class="t"><i style="background:var(--okbg)">💵</i>Entradas</span><span class="row"><select id="addPersonaSel"></select><button class="sec" onclick="agregarPersonaPeriodo()">＋ Persona</button></span></h2><div id="entradas"></div></div>
+  <div class="card" data-sec="egresos"><h2><span class="t"><i style="background:var(--badbg)">🧾</i>Egresos</span><span class="mut" style="font-weight:500;font-size:12px">Escribe, Enter y Enter: sugiere lo más usado</span></h2>
    <div class="quick" id="qE"><input placeholder="🔎 Gasto (ej: costillas)"><input class="v" placeholder="$0" inputmode="numeric" style="width:140px;text-align:right"><button class="btn">Agregar</button></div>
    <div id="salidas"></div></div>
-  <div class="card"><h2><span class="t"><i style="background:color-mix(in srgb,#d946ef 18%,transparent)">👩</i>Gastos de Matilde</span></h2>
+  <div class="card" data-sec="matilde"><h2><span class="t"><i style="background:color-mix(in srgb,#d946ef 18%,transparent)">👩</i>Gastos de Matilde</span></h2>
    <div class="quick" id="qM"><input placeholder="🔎 Gasto de Matilde"><input class="v" placeholder="$0" inputmode="numeric" style="width:140px;text-align:right"><button class="btn">Agregar</button></div>
    <div id="matilde"></div></div>
-  <div class="card"><h2><span class="t"><i style="background:color-mix(in srgb,#6366f1 18%,transparent)">👨</i>Gastos de Andrés</span></h2>
+  <div class="card" data-sec="andres"><h2><span class="t"><i style="background:color-mix(in srgb,#6366f1 18%,transparent)">👨</i>Gastos de Andrés</span></h2>
    <div class="quick" id="qA"><input placeholder="🔎 Gasto de Andrés"><input class="v" placeholder="$0" inputmode="numeric" style="width:140px;text-align:right"><button class="btn">Agregar</button></div>
    <div id="andres"></div></div>
  </div><div>
-  <div class="card"><h2><span class="t"><i style="background:var(--in)">🧮</i>Resumen</span></h2><div id="resumen"></div></div>
-  <div class="card"><h2><span class="t"><i style="background:var(--in)">🍩</i>Egresos por categoría</span></h2><div id="cats"></div></div>
-  <div class="card"><h2><span class="t"><i style="background:var(--in)">👥</i>Ingresos por persona</span></h2><div id="porPer"></div></div>
+  <div class="card" data-sec="resumen"><h2><span class="t"><i style="background:var(--in)">🧮</i>Resumen</span></h2><div id="resumen"></div></div>
+  <div class="card" data-sec="resumen"><h2><span class="t"><i style="background:var(--in)">🍩</i>Egresos por categoría</span></h2><div id="cats"></div></div>
+  <div class="card" data-sec="resumen"><h2><span class="t"><i style="background:var(--in)">👥</i>Ingresos por persona</span></h2><div id="porPer"></div></div>
  </div></div></div>
 </section>
 <section id="t-estad" class="hide">
@@ -1153,12 +1166,31 @@ function opcionesPeriodo(){const p=P();
   ['🧾','Comprobantes',abrirGaleria,{off:!p,badge:p?compsPeriodo(p).length:0,color:'var(--ok)'}],
   ['🗑️','Eliminar periodo',borrarPeriodo,{off:!p,peligro:true}]])}
 function abrirRegistro(){const p=P();if(!p)return;if(p.cerrado)return avisar('Este periodo está cerrado. Reábrelo con ⋯ para registrar gastos.','🔒 Periodo cerrado');
- const ir=(caja,q)=>{const c=$(caja).closest('.card');c.classList.remove('plegada');plegado('sec-'+c.querySelector('h2 .t').textContent.replace('▾','').trim(),false);
+ const ir=(caja,q)=>{const c=$(caja).closest('.card');
+  if(esMovil()){seccion(c.dataset.sec);scrollTo({top:0,behavior:'smooth'});setTimeout(()=>$(q).querySelector('input').focus(),250);return}
+  c.classList.remove('plegada');plegado('sec-'+c.querySelector('h2 .t').textContent.replace('▾','').trim(),false);
   c.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>$(q).querySelector('input').focus(),350)};
+ // en el celular, desde Egresos/Matilde/Andrés el ＋ registra ahí mismo sin preguntar
+ const directo={egresos:['salidas','qE'],matilde:['matilde','qM'],andres:['andres','qA']}[PS];
+ if(esMovil()&&directo)return ir(...directo);
  hoja(true,'Registrar gasto',[
   ['🧾','Egreso de la casa',()=>ir('salidas','qE'),{color:'#f43f5e',sub:'Mercado, servicios, restaurantes…'}],
   ['👩','Gasto de Matilde',()=>ir('matilde','qM'),{color:'#d946ef'}],
   ['👨','Gasto de Andrés',()=>ir('andres','qA'),{color:'#6366f1'}]])}
+/* ---- celular: pestañas de secciones del periodo (arranca en Egresos) ---- */
+const esMovil=()=>matchMedia('(max-width:640px)').matches;
+const SECS=['entradas','egresos','matilde','andres','resumen'];let PS='egresos';
+function seccion(s,dir=0){PS=s;document.querySelectorAll('#ptabs button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
+ document.querySelectorAll('#contenido .card[data-sec]').forEach(c=>{const on=c.dataset.sec===s;c.classList.toggle('ps-on',on);if(esMovil())c.classList.remove('plegada');
+  if(on&&dir){c.style.setProperty('--psx',dir*30+'px');c.classList.remove('ps-anim');void c.offsetWidth;c.classList.add('ps-anim')}});
+ const b=document.querySelector('#ptabs button.on');if(b)b.scrollIntoView({block:'nearest',inline:'center'})}
+document.querySelectorAll('#ptabs button').forEach(b=>b.onclick=()=>{const d=SECS.indexOf(b.dataset.s)-SECS.indexOf(PS);seccion(b.dataset.s,Math.sign(d))});
+seccion('egresos');
+// deslizar de lado sobre el contenido para pasar a la pestaña vecina
+(()=>{let x0=null,y0=0;const z=$('contenido');
+ z.addEventListener('touchstart',e=>{if(!esMovil()||e.target.closest('.kpis,input,select,textarea,.ac,.st-grid'))return x0=null;x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+ z.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;
+  if(Math.abs(dx)<70||Math.abs(dy)>Math.abs(dx)*.6)return;const i=SECS.indexOf(PS)+(dx<0?1:-1);if(i>=0&&i<SECS.length)seccion(SECS[i],dx<0?1:-1)})})();
 // deslizar el menú hacia la izquierda para cerrarlo
 (()=>{let x0=null;const m=$('menu');m.addEventListener('touchstart',e=>{x0=e.touches[0].clientX},{passive:true});
  m.addEventListener('touchend',e=>{if(x0!==null&&e.changedTouches[0].clientX-x0<-60)menu(false);x0=null})})();
@@ -1223,5 +1255,6 @@ async function guardarItemM(it,cambio){const r=await SB.from('gastos_matilde').u
    if(r.error)throw r.error;VM.items.push({id:r.data.id,d:r.data.d,v:+r.data.v,cat:r.data.cat||'',comp:r.data.comp||''});
    d.value='';v.value='';VM.foto=null;pintarCam();estado('☁️ Guardado '+hora());pintarVistaMatilde();d.focus()}
   catch(e){avisar(e.message||String(e),'No se pudo guardar')}finally{b.disabled=false}}})();
+seccion(PS);// después de montar los plegables
 renderTodo();iniciarNube();iniciarArchivo();
 </script></body></html>
