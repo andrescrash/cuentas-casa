@@ -312,7 +312,8 @@ function domingos(a,b){const r=[];const d=new Date(a);while(d.getDay()!==0)d.set
 function quincenas(a,b){const r=[];let d=new Date(a.getFullYear(),a.getMonth(),1);
  while(d<=b){const y=d.getFullYear(),m=d.getMonth();for(const[q,i,f]of[[1,1,15],[2,16,ultimoDia(y,m)]]){const qi=new Date(y,m,i),qf=new Date(y,m,f);if(qf>=a&&qi<=b)r.push({q,ini:qi,fin:qf})}d=new Date(y,m+1,1)}return r}
 function itemsPersona(nom,a,b){const it=[];
- quincenas(a,b).forEach(x=>it.push({d:`CB ${nom} ${x.q} (${String(x.ini.getDate()).padStart(2,'0')} ${MES3[x.ini.getMonth()]} - ${x.fin.getDate()} ${MES3[x.fin.getMonth()]})`,v:0}));
+ const MC=m=>MESES[m].charAt(0).toUpperCase()+MESES[m].slice(1),dd=n=>String(n).padStart(2,'0');
+ quincenas(a,b).forEach(x=>it.push({d:`CB ${nom} ${x.q} | ${dd(x.ini.getDate())} ${MC(x.ini.getMonth())} ➡️ ${dd(x.fin.getDate())} ${MC(x.fin.getMonth())}`,v:0}));
  const MesC=m=>MESES[m].charAt(0).toUpperCase()+MESES[m].slice(1);
  domingos(a,b).forEach((d,i)=>{const l=new Date(d);l.setDate(l.getDate()-6);const ini=l<a?a:l;
   it.push({d:`ROJA ${i+1} ${nom} | ${ini.getDate()} ${MesC(ini.getMonth())} ➡️ ${d.getDate()} ${MesC(d.getMonth())}`,v:0})});return it}
@@ -424,7 +425,11 @@ function migrarRojas(){let cambio=false;const MesC=m=>MESES[m].charAt(0).toUpper
   const m=/^(ROJA \d+ .+?) \| (\d+) de (\p{L}+)$/u.exec(it.d||'');if(!m)return;const mi=MESES.indexOf(m[3].toLowerCase());if(mi<0)return;
   let d=new Date(a.getFullYear(),mi,+m[2]);if(d<a)d=new Date(a.getFullYear()+1,mi,+m[2]);
   const l=new Date(d);l.setDate(l.getDate()-6);const ini=l<a?a:l;
-  it.d=`${m[1]} | ${ini.getDate()} ${MesC(ini.getMonth())} ➡️ ${d.getDate()} ${MesC(d.getMonth())}`;cambio=true}))});
+  it.d=`${m[1]} | ${ini.getDate()} ${MesC(ini.getMonth())} ➡️ ${d.getDate()} ${MesC(d.getMonth())}`;cambio=true}));
+  // CB: "CB X 1 (01 NOV - 15 NOV)" → "CB X 1 | 01 Noviembre ➡️ 15 Noviembre"
+  p.entradas.forEach(e=>e.items.forEach(it=>{const m=/^(CB \d* ?.+?) \((\d+) (\p{L}{3}) - (\d+) (\p{L}{3})\)$/u.exec(it.d||'');if(!m)return;
+   const m1=MES3.indexOf(m[3].toUpperCase()),m2=MES3.indexOf(m[5].toUpperCase());if(m1<0||m2<0)return;
+   it.d=`${m[1]} | ${m[2].padStart(2,'0')} ${MesC(m1)} ➡️ ${m[4].padStart(2,'0')} ${MesC(m2)}`;cambio=true}))});
  if(cambio)save()}
 function pillDe(t){const m=/^(CB|ROJA|BLANCA)\b/i.exec(t||'');return m?m[1].toUpperCase():''}
 
