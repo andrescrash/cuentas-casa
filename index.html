@@ -573,10 +573,14 @@ const MAT={ok:false,snap:{}};// ok: la tabla existe y ya se cargó; snap: id →
 const filaMat=(it,pid)=>({periodo_id:pid,d:it.d||'',v:num(it.v),cat:it.cat||null,comp:it.comp||null});
 function datosParaNube(){if(!MAT.ok||!DB.matTabla)return DB;// los gastos de Matilde viven en su tabla, no en el bloque
  return{...DB,periodos:DB.periodos.map(p=>({...p,matilde:[]}))}}
-async function cargarMatilde(){if(!USR||MODO!=='dueno')return;
+// una sola carga a la vez (si dos llamadas coinciden, la segunda espera a la primera)
+function cargarMatilde(){if(!MAT.cargando)MAT.cargando=cargarMatilde0().finally(()=>{MAT.cargando=null});return MAT.cargando}
+async function cargarMatilde0(){if(!USR||MODO!=='dueno')return;
  let r=await SB.from('gastos_matilde').select('*').order('orden');if(r.error){MAT.ok=false;return}// sin la tabla: todo sigue como antes
  if(!DB.matTabla){// primera vez: pasar los gastos de Matilde guardados en el bloque a la tabla
-  const nuevos=[];DB.periodos.forEach(p=>(p.matilde||[]).forEach((it,i)=>{if(!it.id)nuevos.push({...filaMat(it,p.id),orden:Date.now()/1000+i/1000})}));
+  // sin repetir los que ya estén (p. ej. si otro dispositivo hizo el traspaso primero)
+  const clave=g=>[g.periodo_id,g.d,num(g.v),g.comp||''].join('|'),ya=new Set(r.data.map(clave));
+  const nuevos=[];DB.periodos.forEach(p=>(p.matilde||[]).forEach((it,i)=>{const f=filaMat(it,p.id);if(!it.id&&!ya.has(clave(f))){ya.add(clave(f));nuevos.push({...f,orden:Date.now()/1000+i/1000})}}));
   if(nuevos.length){const ins=await SB.from('gastos_matilde').insert(nuevos);if(ins.error){estado('⚠️ No pude pasar los gastos de Matilde: '+ins.error.message);return}}
   r=await SB.from('gastos_matilde').select('*').order('orden');if(r.error)return;DB.matTabla=true}
  MAT.snap={};DB.periodos.forEach(p=>p.matilde=[]);
