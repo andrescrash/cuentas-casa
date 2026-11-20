@@ -674,7 +674,17 @@ montarRapido('qE','egresos');montarRapido('qM','matilde');montarRapido('qA','and
 
 /* ================= render periodo ================= */
 function filaValor(it,lock,onch){const i=document.createElement('input');i.inputMode='numeric';i.placeholder='$0';i.value=it.v?fmt(it.v):'';i.disabled=lock;
- i.oninput=()=>{it.v=num(i.value);save();onch()};i.onblur=()=>i.value=it.v?fmt(it.v):'';i.onfocus=()=>i.select();return i}
+ // si un monto que ya estaba se borra o se deja en 0, se pide confirmación al salir del campo
+ let antes=num(it.v);
+ i.oninput=()=>{it.v=num(i.value);save();onch()};
+ i.onblur=async()=>{if(antes&&!num(it.v)){
+   const ok=await preguntar(`Tenía ${fmt(antes)}. ¿Dejarlo en $0?`,{titulo:'¿Borrar este monto?',si:'Borrar monto',peligro:true});
+   if(!ok){it.v=antes;save();onch()}}
+  antes=num(it.v);i.value=it.v?fmt(it.v):''};
+ i.onfocus=()=>{antes=num(it.v);i.select()};return i}
+// borrar una fila: si tiene monto, pregunta primero
+async function confirmarBorrado(it){if(!num(it.v))return true;
+ return preguntar(`"${(it.d||'Sin nombre').trim()}" tiene ${fmt(it.v)}.`,{titulo:'¿Eliminar esta fila?',si:'Eliminar',peligro:true})}
 function filaTexto(it,campo,lock,ph){const i=document.createElement('input');i.value=it[campo]||'';i.placeholder=ph||'';i.disabled=lock;i.oninput=()=>{it[campo]=i.value;save()};return i}
 // fila de gasto de Matilde/Andrés: nombre con ícono, valor y categoría
 function filaGastoCat(tr,it,lock){const k=canon(it.cat||catDe(it.d));const c=td(tr,'',filaTexto(it,'d',lock));c.style.display='flex';c.style.alignItems='center';
@@ -797,7 +807,7 @@ async function abrirGaleria(){const l=compsPeriodo(),hu=await huerfanos();
 function btnComp(it,lock){const b=document.createElement('button');b.className='x';
  if(it.comp){b.textContent='🧾';b.title='Ver comprobante';b.style.color='var(--ok,#10b981)';b.onclick=()=>verComp(it)}
  else{b.textContent='📎';b.title='Adjuntar comprobante (foto o captura)';b.disabled=lock;b.onclick=()=>elegirComp(it)}return b}
-async function quitarFila(arr,i){const it=arr[i];if(it&&it.comp){if(!await preguntar('Este gasto tiene comprobante. Se borrarán los dos.',{titulo:'¿Borrar gasto y comprobante?',si:'Borrar',peligro:true}))return;SB.storage.from('comprobantes').remove([it.comp])}arr.splice(i,1);save();renderPeriodo()}
+async function quitarFila(arr,i){const it=arr[i];if(it&&!it.comp&&!await confirmarBorrado(it))return;if(it&&it.comp){if(!await preguntar('Este gasto tiene comprobante. Se borrarán los dos.',{titulo:'¿Borrar gasto y comprobante?',si:'Borrar',peligro:true}))return;SB.storage.from('comprobantes').remove([it.comp])}arr.splice(i,1);save();renderPeriodo()}
 
 // pasa "ROJA 1 X | 15 de noviembre" al formato con rango "ROJA 1 X | 9 Noviembre ➡️ 15 Noviembre" (conserva el valor)
 function migrarRojas(){let cambio=false;const MesC=m=>MESES[m].charAt(0).toUpperCase()+MESES[m].slice(1);
@@ -843,7 +853,7 @@ function renderPeriodo(){const p=P();
   const t=document.createElement('table');
   e.items.forEach((it,i)=>{const tr=t.insertRow();const c=td(tr,'',filaTexto(it,'d',lock));const pl=pillDe(it.d);
    if(pl){c.style.display='flex';c.style.alignItems='center';c.insertAdjacentHTML('afterbegin',`<span class="pill ${pl}">${pl}</span>`)}
-   td(tr,'v',filaValor(it,lock,upd));td(tr,'xx',btnX(lock,()=>{e.items.splice(i,1);save();renderPeriodo()}))});
+   td(tr,'v',filaValor(it,lock,upd));td(tr,'xx',btnX(lock,async()=>{if(!await confirmarBorrado(it))return;e.items.splice(i,1);save();renderPeriodo()}))});
   d.appendChild(t);
   const r=document.createElement('div');r.className='row';r.style.marginTop='8px';
   const add=document.createElement('button');add.className='sec';add.textContent='＋ Fila';add.disabled=lock;
