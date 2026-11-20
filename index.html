@@ -32,6 +32,9 @@ h3{font-size:14px;margin:0}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mut{color:var(--mut)}
 .hide{display:none!important}
 #entradas a{color:var(--pri);font-weight:600}
+#entradas tr.ro input:disabled{opacity:1;color:var(--tx);cursor:default;-webkit-text-fill-color:var(--tx)}#entradas tr.ro td.v input:disabled{color:var(--tx)}
+#entradas tr.editando td{background:color-mix(in srgb,var(--pri) 7%,transparent)}#entradas tr.editando input{border-color:var(--bd)}
+.lapiz{font-size:14px}#entradas tr.editando .lapiz{color:var(--ok);font-weight:800;font-size:16px}
 .gal-n{background:var(--ok);color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:2px}
 /* barra del periodo */
 .pbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -936,15 +939,23 @@ function renderPeriodo(){const p=P();
   ph.onclick=()=>{d.classList.toggle('plegada');plegado('per-'+e.pid,d.classList.contains('plegada'))};
   const sub=d.querySelector('.sub'),upd=()=>{sub.textContent=fmt(sum(e.items));resumen()};sub.textContent=fmt(sum(e.items));
   const t=document.createElement('table');
-  e.items.forEach((it,i)=>{const tr=t.insertRow();const c=td(tr,'',filaTexto(it,'d',lock));const pl=pillDe(it.d);
+  // cada fila queda bloqueada; se edita solo con ✏️ (las filas nuevas y vacías arrancan abiertas)
+  e.items.forEach((it,i)=>{const tr=t.insertRow();const abierta=!lock&&(EDIT.has(it)||(!it.d&&!num(it.v)));const ro=lock||!abierta;
+   const txt=filaTexto(it,'d',ro),val=filaValor(it,ro,upd);tr.classList.toggle('ro',ro&&!lock);tr.classList.toggle('editando',abierta);
+   const c=td(tr,'',txt);const pl=pillDe(it.d);
    if(pl){c.style.display='flex';c.style.alignItems='center';c.insertAdjacentHTML('afterbegin',`<span class="pill ${pl}">${pl}</span>`)}
-   td(tr,'v',filaValor(it,lock,upd));td(tr,'xx',btnX(lock,async()=>{if(!await confirmarBorrado(it))return;e.items.splice(i,1);save();renderPeriodo()}))});
+   td(tr,'v',val);
+   const ed=document.createElement('button');ed.className='x lapiz';ed.disabled=lock;ed.textContent=abierta?'✓':'✏️';ed.title=abierta?'Listo':'Editar';
+   ed.onclick=()=>{if(abierta){EDIT.delete(it);renderPeriodo()}else{EDIT.add(it);renderPeriodo();const f=document.querySelector('#entradas tr.editando td.v input');if(f){f.focus()}}};
+   if(abierta)[txt,val].forEach(x=>x.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.target.blur();EDIT.delete(it);setTimeout(renderPeriodo,0)}}));
+   td(tr,'xx',ed);
+   td(tr,'xx',btnX(lock,async()=>{if(!await confirmarBorrado(it))return;EDIT.delete(it);e.items.splice(i,1);save();renderPeriodo()}))});
   d.appendChild(t);
   const r=document.createElement('div');r.className='row';r.style.marginTop='8px';
   const add=document.createElement('button');add.className='sec';add.textContent='＋ Fila';add.disabled=lock;
   const menu=document.createElement('span');menu.className='row hide';menu.style.gap='6px';
   const nueva=tipo=>{let d='';if(tipo){const n=e.items.filter(x=>pillDe(x.d)===tipo).length+1;d=`${tipo} ${n} ${per.nombre}`}
-   e.items.push({d,v:0});save();renderPeriodo()};
+   const nv={d,v:0};e.items.push(nv);EDIT.add(nv);save();renderPeriodo();const f=document.querySelector('#entradas tr.editando td.v input');if(f)f.focus()};
   [['CB','CB'],['SC','SC'],['BG','BG'],['','Otra']].forEach(([k,txt])=>{const b=document.createElement('button');b.className='sec';
    b.innerHTML=k?`<span class="pill ${k}" style="margin:0">${k}</span>`:txt;b.onclick=()=>nueva(k);menu.appendChild(b)});
   const cx=document.createElement('button');cx.className='x';cx.textContent='✕';cx.title='Cancelar';cx.onclick=()=>{menu.classList.add('hide');add.classList.remove('hide')};menu.appendChild(cx);
@@ -1128,6 +1139,7 @@ document.querySelectorAll('#contenido .card>h2>.t').forEach(t=>{const c=t.closes
 function renderTodo(){if(MODO==='matilde')return pintarVistaMatilde();migrarRojas();tab(document.querySelector('.tabs button.on').dataset.t)}
 
 /* ================= vista de Matilde ================= */
+const EDIT=new Set();// filas de Entradas abiertas con ✏️
 const VM={pid:null,nombre:'',cerrado:false,cats:[],items:[],foto:null};
 const compsMatilde=()=>VM.items.filter(it=>it.comp).map(it=>({it,sec:'Mis gastos',col:'#d946ef'}));
 async function cargarVistaMatilde(){const c=await SB.from('compartido').select('*').maybeSingle();
