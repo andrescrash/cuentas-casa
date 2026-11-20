@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Cuentas Casa</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -171,20 +171,68 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
 .gal-del:hover{background:#f43f5e;opacity:1}
 .gal-rec{margin:0 10px 10px;background:#f59e0b;color:#1f1300;border:none;font-weight:700}.gal-rec:hover{filter:brightness(1.08)}
 .dlg-ops{display:grid;gap:8px;margin-top:14px}.dlg-op{text-align:left;padding:12px 14px;display:flex;align-items:center}.dlg-op:hover{border-color:var(--pri);background:color-mix(in srgb,var(--pri) 8%,var(--card))}
+/* menú lateral, hoja inferior y botón flotante (solo se usan en celular) */
+.solo-movil{display:none!important}
+.hamb{display:grid;gap:4px;width:18px}.hamb i{display:block;height:2px;border-radius:2px;background:currentColor}
+.fondo{position:fixed;inset:0;z-index:40;background:#05070fa6;backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .25s}
+.fondo.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;bottom:0;left:0;z-index:41;width:min(300px,84vw);background:var(--card);border-right:1px solid var(--bd);box-shadow:20px 0 60px #0006;
+ transform:translateX(-102%);transition:transform .28s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding:calc(14px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom))}
+.drawer.on{transform:none}
+.dr-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.dr-nav{display:grid;gap:4px}
+.dr-nav button,.dr-it{display:flex;align-items:center;gap:12px;border:none;background:none;padding:12px;border-radius:12px;font-size:15px;font-weight:600;color:var(--tx);text-align:left;width:100%}
+.dr-nav button span,.dr-it span:first-child{width:24px;text-align:center;font-size:18px}
+.dr-nav button.on{background:color-mix(in srgb,var(--pri) 14%,transparent);color:var(--pri)}
+.dr-pie{margin-top:auto;border-top:1px solid var(--bd);padding-top:10px;display:grid;gap:2px}
+.dr-it.peligro{color:var(--bad)}.dr-mail{font-size:12px;padding:6px 12px;word-break:break-all}
+.dr-est{font-size:12px;color:var(--mut);padding:4px 12px 8px}
+.hoja{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--card);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px #0006;
+ padding:8px 14px calc(16px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);max-height:85vh;overflow:auto}
+.hoja.on{transform:none}
+.hoja-asa{width:40px;height:5px;border-radius:5px;background:var(--bd);margin:2px auto 10px}
+.hoja-t{font-weight:800;font-size:16px;padding:0 4px 10px}
+.hj-it{display:flex;align-items:center;gap:14px;width:100%;border:none;background:none;padding:13px 10px;border-radius:12px;font-size:15px;font-weight:600;text-align:left;color:var(--tx)}
+.hj-it:active{background:var(--in)}.hj-it .hi{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px;background:var(--in);flex:none}
+.hj-it small{display:block;font-weight:500;color:var(--mut);font-size:12px}
+.hj-it.peligro{color:var(--bad)}.hj-it.peligro .hi{background:var(--badbg)}.hj-it:disabled{opacity:.4}
+.hj-it .gal-n{margin-left:auto}
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:20;width:58px;height:58px;border-radius:50%;border:none;padding:0;
+ background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-size:30px;font-weight:400;line-height:1;box-shadow:0 10px 26px color-mix(in srgb,var(--pri) 55%,transparent);display:grid;place-items:center}
+.fab:active{transform:scale(.94)}.fab.oculto{display:none!important}
+.nube-dot{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 20%,transparent);margin-left:auto;flex:none}
+.nube-dot.w{background:#f59e0b;box-shadow:0 0 0 4px #f59e0b33}.nube-dot.e{background:var(--bad);box-shadow:0 0 0 4px color-mix(in srgb,var(--bad) 25%,transparent)}
 /* ===== celular ===== */
 @media(max-width:640px){
+ html,body{overflow-x:hidden}
  body{font-size:14px}
- header{padding:8px 12px;gap:8px}.logo{font-size:16px}.logo b{width:30px;height:30px}
- .tabs{order:3;width:100%}.tabs button{flex:1;padding:8px 4px;font-size:13px}
- #estado{font-size:11px;max-width:45vw;text-align:right}
- main{padding:12px}
+ .solo-movil{display:revert!important}#menuBtn,#nubeDot,.pmas,.fab{display:grid!important}#hPer{display:block!important}.fab.oculto{display:none!important}
+ header{padding:calc(8px + env(safe-area-inset-top)) 12px 8px;gap:10px;flex-wrap:nowrap}
+ header .tabs,#estado{display:none}
+ .logo{font-size:15px;gap:10px;min-width:0;flex:1}.logo b{width:32px;height:32px;font-size:16px;flex:none}
+ .logo-t{display:none}
+ .hper{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+ .ico{width:40px;height:40px;flex:none}
+ main{padding:12px 12px calc(96px + env(safe-area-inset-bottom))}
  .card{padding:14px;border-radius:14px;margin-bottom:12px}
  h2.pleg{margin:-14px -14px 12px;padding:14px;border-radius:14px}.card.plegada>h2.pleg{margin-bottom:-14px}
- .pbar{gap:8px}.pbar select{min-width:0;width:100%}.pbar .sp{display:none}.pbar .rango{flex:1;font-size:12px}
- .pbar button{flex:1;padding:9px 6px;font-size:13px}.pbar .btn{flex:1 1 100%}
- .kpis{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
- .kpi{padding:12px;border-radius:14px}.kpi .val{font-size:19px;margin-top:6px}.kpi .sub2{font-size:11px}.kpi:after{width:80px;height:80px;right:-24px;top:-24px}
- .kpi small{font-size:12px}.kpi small i{width:24px;height:24px}
+ /* barra del periodo: selector + ⋯ */
+ .pbar{display:grid;grid-template-columns:1fr 44px;gap:6px 8px;align-items:center}
+ .pbar select{min-width:0;width:100%;height:44px;font-size:15px}
+ .pbar>button:not(.pmas),.pbar .sp,.pbar .tag{display:none}
+ .pbar .pmas{grid-row:1;grid-column:2;width:44px;height:44px;padding:0;font-size:22px;place-items:center;line-height:1}
+ .pbar .rango{grid-column:1/-1;background:none;padding:0 4px;font-size:12px}
+ /* franja de tarjetas */
+ .kpis{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -12px 12px;padding:0 12px 4px;scrollbar-width:none}
+ .kpis::-webkit-scrollbar{display:none}.kpis{scroll-padding-left:12px}
+ #t-estad .donut svg{width:120px;height:120px}
+ .kpi{flex:0 0 44%;scroll-snap-align:start;padding:11px 12px;border-radius:14px}
+ .kpi .val{font-size:18px;margin-top:4px;white-space:nowrap}.kpi .sub2{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .kpi:after{width:70px;height:70px;right:-22px;top:-22px}
+ .kpi small{font-size:11.5px;gap:6px;white-space:nowrap}.kpi small i{width:22px;height:22px;font-size:12px}
+ /* botones parejos */
+ .quick input,.quick button,.quick .cam{height:44px}
+ .row>button.sec,.row>button.btn{min-height:40px}
  .grid{gap:0}
  h2>span.row{width:100%}h2>span.row select{flex:1}h2>span.mut{display:none}
  .quick{flex-wrap:wrap}.quick input:first-child{flex:1 1 100%}.quick .v{flex:1 1 0;min-width:0;width:auto!important}
@@ -209,14 +257,54 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
  .vz-thumbs{padding:6px 12px}.vz-thumbs button{width:46px;height:46px}
  .vz-acts{gap:8px;padding:8px 12px 14px}.vz-acts .vz-btn{flex:1;justify-content:center;padding:10px 6px}
  .gal{grid-template-columns:1fr 1fr;gap:10px}
+ /* estadísticas */
+ #t-estad .pbar{grid-template-columns:1fr}#t-estad .pbar .sp{display:none}
+ #stVs{font-size:12px!important;padding:0 4px}
+ .st-grid{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -14px;padding:0 14px 4px;scrollbar-width:none}
+ .st-grid::-webkit-scrollbar{display:none}
+ .st-p{flex:0 0 78%;scroll-snap-align:start;padding:12px}
+ .st-big{font-size:21px}.spark{height:38px}
+ .st-g2{gap:0}
+ .st-top{padding:8px 10px;gap:10px}.st-top .ci{width:32px;height:32px;font-size:17px}
+ .st-cats td{padding:5px 2px;font-size:12.5px}
+ #t-estad h2{flex-wrap:nowrap}#t-estad h2>span.mut{display:none}
+ /* historial */
+ .hc{height:170px;gap:10px}.hc .bars{height:130px}.hc .bars i{width:11px}.hc .col{min-width:54px}
+ #hist table{font-size:12px;min-width:560px}
+ /* configuración */
+ #t-config .row input:not([type=color]){flex:1;min-width:0}
 }
 </style></head><body>
 <header>
- <div class="logo"><b>$</b>Cuentas Casa</div>
+ <button class="ico solo-movil" id="menuBtn" onclick="menu(true)" title="Menú" aria-label="Abrir menú"><span class="hamb"><i></i><i></i><i></i></span></button>
+ <div class="logo"><b>$</b><span class="logo-t">Cuentas Casa</span><span class="hper solo-movil" id="hPer"></span></div>
+ <span id="nubeDot" class="nube-dot solo-movil" title=""></span>
  <div class="tabs"><button data-t="periodo" class="on">📊 Periodo</button><button data-t="estad">📈 Estadísticas</button><button data-t="historial">🗂️ Historial</button><button data-t="config">⚙️ Configuración</button></div>
  <span id="estado"></span>
  <button class="ico" id="tema" title="Cambiar tema">🌙</button>
 </header>
+<!-- menú lateral (celular) -->
+<div id="menuFondo" class="fondo" onclick="menu(false)"></div>
+<aside id="menu" class="drawer" aria-label="Menú">
+ <div class="dr-h"><div class="logo"><b>$</b>Cuentas Casa</div><button class="x" onclick="menu(false)" style="font-size:20px">✕</button></div>
+ <nav class="dr-nav">
+  <button data-t="periodo" class="on"><span>📊</span>Periodo</button>
+  <button data-t="estad"><span>📈</span>Estadísticas</button>
+  <button data-t="historial"><span>🗂️</span>Historial</button>
+  <button data-t="config"><span>⚙️</span>Configuración</button>
+ </nav>
+ <div class="dr-pie">
+  <div class="dr-est" id="drEstado"></div>
+  <button class="dr-it" onclick="$('tema').click();pintarMenu()"><span id="drTemaI">🌙</span><span id="drTemaT">Tema oscuro</span></button>
+  <button class="dr-it" onclick="menu(false);nubeCargar(true)"><span>🔄</span>Recargar de la nube</button>
+  <div class="mut dr-mail" id="drMail"></div>
+  <button class="dr-it peligro" onclick="menu(false);salir()"><span>🚪</span>Cerrar sesión</button>
+ </div>
+</aside>
+<!-- hoja inferior genérica (celular) -->
+<div id="hojaFondo" class="fondo" onclick="hoja(false)"></div>
+<div id="hoja" class="hoja"><div class="hoja-asa"></div><div class="hoja-t" id="hojaT"></div><div id="hojaC"></div></div>
+<button id="fab" class="fab solo-movil" onclick="abrirRegistro()" aria-label="Registrar gasto">＋</button>
 <main>
 <section id="t-periodo">
  <div class="card pbar">
@@ -228,6 +316,7 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
   <button class="sec" id="btnCerrar" onclick="toggleCerrar()">🔒 Cerrar</button>
   <button class="sec" id="btnGal" onclick="abrirGaleria()" title="Ver todos los comprobantes del periodo">🧾 Comprobantes <span id="galN" class="gal-n">0</span></button>
   <button class="sec" onclick="borrarPeriodo()" title="Eliminar periodo">🗑️</button>
+  <button class="sec solo-movil pmas" onclick="opcionesPeriodo()" aria-label="Opciones del periodo">⋯</button>
  </div>
  <div id="vacio" class="card empty hide"><b>🗓️</b><h2 style="justify-content:center">Aún no hay periodos</h2><p class="mut">Crea el primero y elige las fechas en el calendario.</p><button class="btn" onclick="abrirNuevo()">＋ Nuevo periodo</button></div>
  <div id="contenido">
@@ -416,7 +505,8 @@ let dirHandle=null,dirOK=false,tSave=null;
 function idb(){return new Promise((ok,ko)=>{const r=indexedDB.open('cuentasCasa',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=ko})}
 async function kvSet(k,v){const d=await idb();return new Promise(ok=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=ok})}
 async function kvGet(k){const d=await idb();return new Promise(ok=>{const r=d.transaction('kv').objectStore('kv').get(k);r.onsuccess=()=>ok(r.result);r.onerror=()=>ok(null)})}
-function estado(t){$('estado').innerHTML=t}
+function estado(t){$('estado').innerHTML=t;const d=$('nubeDot');if(!d)return;
+ d.className='nube-dot solo-movil'+(/⚠️|❌/.test(t)?' e':/⏳/.test(t)?' w':'');d.title=t.replace(/<[^>]+>/g,'');$('drEstado').innerHTML=t}
 // Con sesión, no se sube nada a la nube hasta haber cargado lo último de ella (LISTO),
 // para que un dispositivo con datos viejos nunca pise lo que se guardó desde otro.
 function save(){try{localStorage.setItem('cuentasCasa2',JSON.stringify(DB))}catch(e){}if(USR&&!LISTO)return;pendiente=true;estado('⏳ Guardando…');clearTimeout(tSave);tSave=setTimeout(()=>{nubeGuardar();escribirArchivo()},600)}
@@ -806,7 +896,7 @@ function resumen(){const p=P();if(!p)return;const c=calc(p);
  const mx=Math.max(1,...c.porP.map(x=>x.t));
  $('porPer').innerHTML=c.porP.map(x=>`<div class="hbar"><div class="row"><span><span class="dot" style="background:${x.color}"></span>${esc(x.nombre)}</span><b>${fmt(x.t)}</b></div><div class="tr"><i style="width:${x.t/mx*100}%;background:${x.color}"></i></div></div>`).join('')||'<p class="mut">Sin personas.</p>';
  if($('totE'))$('totE').textContent=fmt(c.te);if($('totM'))$('totM').textContent=fmt(c.tm);if($('totA'))$('totA').textContent=fmt(c.ta);
- const nc=compsPeriodo(p).length;$('galN').textContent=nc;$('galN').classList.toggle('hide',!nc)}
+ const nc=compsPeriodo(p).length;$('galN').textContent=nc;if(!$('t-periodo').classList.contains('hide'))$('hPer').textContent=p.nombre;$('galN').classList.toggle('hide',!nc)}
 $('selPer').onchange=e=>{DB.actual=e.target.value;save();renderPeriodo()};
 
 /* ================= historial ================= */
@@ -898,10 +988,41 @@ async function borrarCat(x,usos){const l=catsL().filter(k=>k!==x.n),dest=l.inclu
 function nuevoFijo(){const n=up($('nuevoFijo').value);if(!n||DB.fijos.includes(n))return;DB.fijos.push(n);$('nuevoFijo').value='';save();renderConfig()}
 
 /* ================= pestañas ================= */
-function tab(t){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+function tab(t){document.querySelectorAll('.tabs button,.dr-nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+ const nom={periodo:P()?P().nombre:'Periodo',estad:'Estadísticas',historial:'Historial',config:'Configuración'}[t];if($('hPer'))$('hPer').textContent=nom;
+ $('fab').classList.toggle('oculto',t!=='periodo'||!P());
  ['periodo','estad','historial','config'].forEach(x=>$('t-'+x).classList.toggle('hide',x!==t));
  if(t==='periodo')renderPeriodo();if(t==='historial')renderHist();if(t==='estad')renderEstad();if(t==='config')renderConfig()}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
+document.querySelectorAll('.dr-nav button').forEach(b=>b.onclick=()=>{menu(false);tab(b.dataset.t);scrollTo({top:0})});
+
+/* ---- celular: menú ☰, hoja inferior ⋯ y botón ＋ ---- */
+function pintarMenu(){const osc=document.documentElement.dataset.theme?document.documentElement.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+ $('drTemaI').textContent=osc?'☀️':'🌙';$('drTemaT').textContent=osc?'Tema claro':'Tema oscuro';$('drMail').textContent=USR?USR.email:''}
+function menu(on){pintarMenu();$('menu').classList.toggle('on',on);$('menuFondo').classList.toggle('on',on);document.body.style.overflow=on?'hidden':''}
+function hoja(on,titulo,items){if(on){$('hojaT').textContent=titulo||'';const c=$('hojaC');c.innerHTML='';
+  items.forEach(([ic,txt,fn,o={}])=>{const b=document.createElement('button');b.className='hj-it'+(o.peligro?' peligro':'');b.disabled=!!o.off;
+   b.innerHTML=`<span class="hi" ${o.color?`style="background:color-mix(in srgb,${o.color} 20%,transparent)"`:''}>${ic}</span><span>${esc(txt)}${o.sub?`<small>${esc(o.sub)}</small>`:''}</span>${o.badge!==undefined?`<span class="gal-n">${o.badge}</span>`:''}`;
+   b.onclick=()=>{hoja(false);setTimeout(fn,180)};c.appendChild(b)})}
+ $('hoja').classList.toggle('on',!!on);$('hojaFondo').classList.toggle('on',!!on);document.body.style.overflow=on?'hidden':''}
+function opcionesPeriodo(){const p=P();
+ hoja(true,p?p.nombre:'Periodo',[
+  ['＋','Nuevo periodo',abrirNuevo,{color:'var(--pri)'}],
+  ['📅','Cambiar fechas',abrirFechas,{off:!p||p.cerrado}],
+  [p&&p.cerrado?'🔓':'🔒',p&&p.cerrado?'Reabrir periodo':'Cerrar periodo',toggleCerrar,{off:!p,sub:p&&p.cerrado?'Vuelve a permitir cambios':'Bloquea cambios y guarda respaldo'}],
+  ['🧾','Comprobantes',abrirGaleria,{off:!p,badge:p?compsPeriodo(p).length:0,color:'var(--ok)'}],
+  ['🗑️','Eliminar periodo',borrarPeriodo,{off:!p,peligro:true}]])}
+function abrirRegistro(){const p=P();if(!p)return;if(p.cerrado)return avisar('Este periodo está cerrado. Reábrelo con ⋯ para registrar gastos.','🔒 Periodo cerrado');
+ const ir=(caja,q)=>{const c=$(caja).closest('.card');c.classList.remove('plegada');plegado('sec-'+c.querySelector('h2 .t').textContent.replace('▾','').trim(),false);
+  c.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>$(q).querySelector('input').focus(),350)};
+ hoja(true,'Registrar gasto',[
+  ['🧾','Egreso de la casa',()=>ir('salidas','qE'),{color:'#f43f5e',sub:'Mercado, servicios, restaurantes…'}],
+  ['👩','Gasto de Matilde',()=>ir('matilde','qM'),{color:'#d946ef'}],
+  ['👨','Gasto de Andrés',()=>ir('andres','qA'),{color:'#6366f1'}]])}
+// deslizar el menú hacia la izquierda para cerrarlo
+(()=>{let x0=null;const m=$('menu');m.addEventListener('touchstart',e=>{x0=e.touches[0].clientX},{passive:true});
+ m.addEventListener('touchend',e=>{if(x0!==null&&e.changedTouches[0].clientX-x0<-60)menu(false);x0=null})})();
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('menu').classList.contains('on'))menu(false);if($('hoja').classList.contains('on'))hoja(false)}});
 /* secciones plegables (se recuerda en este navegador) */
 // porDefecto: cómo arranca si el usuario nunca la ha tocado (las secciones arrancan cerradas)
 function plegado(k,v,porDefecto=false){try{const o=JSON.parse(localStorage.getItem('cuentasPlegado')||'{}');if(v===undefined)return k in o?!!o[k]:porDefecto;o[k]=v;localStorage.setItem('cuentasPlegado',JSON.stringify(o))}catch(e){return porDefecto}}
