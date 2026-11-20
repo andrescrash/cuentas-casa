@@ -100,6 +100,28 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
 .hc .col{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:70px}
 .hc .bars{display:flex;align-items:flex-end;gap:4px;height:160px}.hc .bars i{width:16px;border-radius:5px 5px 0 0}
 .hc small{font-size:11px;color:var(--mut);text-align:center}
+/* íconos de categoría */
+.ci{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;font-size:14px;margin-right:6px;flex:none;vertical-align:middle}
+.icoBtn{width:40px;height:36px;font-size:18px;padding:0;border-radius:10px;background:var(--in);border:1px solid var(--bd)}
+.icoBtn:hover{border-color:var(--pri)}
+#icoPop{position:fixed;z-index:60;background:var(--card);border:1px solid var(--bd);border-radius:14px;box-shadow:var(--sh);padding:10px;width:min(330px,calc(100vw - 32px));max-height:min(420px,70vh);overflow:auto}
+#icoPop .g{font-size:11px;color:var(--mut);font-weight:700;margin:8px 0 4px;text-transform:uppercase}
+#icoPop .e{display:grid;grid-template-columns:repeat(8,1fr);gap:2px}
+#icoPop .e button{background:none;border:none;font-size:20px;padding:5px 0;border-radius:8px}#icoPop .e button:hover,#icoPop .e button.on{background:var(--in)}
+/* estadísticas */
+.st-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.st-p{border:1px solid var(--bd);border-radius:16px;padding:14px;background:var(--card2);position:relative;overflow:hidden}
+.st-p:before{content:'';position:absolute;left:0;top:0;right:0;height:4px;background:var(--pc)}
+.st-big{font-size:24px;font-weight:800;letter-spacing:-.5px;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.dl{display:inline-flex;gap:4px;align-items:center;font-size:12px;font-weight:700;padding:3px 8px;border-radius:20px}
+.dl.up{background:var(--okbg);color:var(--ok)}.dl.dn{background:var(--badbg);color:var(--bad)}.dl.eq{background:var(--in);color:var(--mut)}
+.dl.gup{background:var(--badbg);color:var(--bad)}.dl.gdn{background:var(--okbg);color:var(--ok)}
+.spark{display:flex;align-items:flex-end;gap:3px;height:46px;margin-top:10px}.spark i{flex:1;border-radius:3px 3px 0 0;background:var(--pc);opacity:.35;min-height:2px}.spark i.on{opacity:1}
+.st-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-top:8px}
+.st-top{display:flex;gap:12px;align-items:center;background:var(--in);border-radius:12px;padding:10px 12px;margin:10px 0}
+.st-top .ci{width:38px;height:38px;font-size:20px;border-radius:10px;margin:0}
+.st-cats td{padding:6px 4px;font-size:13px}.st-cats td.n{text-align:right;font-variant-numeric:tabular-nums;width:auto}
+.st-g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:980px){.st-g2{grid-template-columns:1fr}}
 /* 📷 en la barra de registro */
 .cam{position:relative;width:42px;padding:0;display:grid;place-items:center;font-size:17px;overflow:hidden;flex:none}
 .cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -184,7 +206,7 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
 </style></head><body>
 <header>
  <div class="logo"><b>$</b>Cuentas Casa</div>
- <div class="tabs"><button data-t="periodo" class="on">📊 Periodo</button><button data-t="historial">🗂️ Historial</button><button data-t="config">⚙️ Configuración</button></div>
+ <div class="tabs"><button data-t="periodo" class="on">📊 Periodo</button><button data-t="estad">📈 Estadísticas</button><button data-t="historial">🗂️ Historial</button><button data-t="config">⚙️ Configuración</button></div>
  <span id="estado"></span>
  <button class="ico" id="tema" title="Cambiar tema">🌙</button>
 </header>
@@ -220,6 +242,14 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
   <div class="card"><h2><span class="t"><i style="background:var(--in)">👥</i>Ingresos por persona</span></h2><div id="porPer"></div></div>
  </div></div></div>
 </section>
+<section id="t-estad" class="hide">
+ <div class="card pbar"><select id="stPer"></select><span class="rango" id="stRango"></span><span class="sp"></span><span class="mut" id="stVs" style="font-size:13px"></span></div>
+ <div id="stVacio" class="card empty hide"><b>📈</b><h2 style="justify-content:center">Aún no hay periodos</h2><p class="mut">Crea un periodo para ver estadísticas.</p></div>
+ <div id="stCont">
+  <div class="card"><h2><span class="t"><i style="background:var(--okbg)">👥</i>Ingresos por persona</span><span class="mut" style="font-size:12px;font-weight:500">Comparado con el periodo anterior</span></h2><div id="stPersonas" class="st-grid"></div></div>
+  <div class="st-g2"><div class="card" id="stM"></div><div class="card" id="stA"></div></div>
+ </div>
+</section>
 <section id="t-historial" class="hide">
  <div class="card"><h2><span class="t"><i style="background:var(--in)">📈</i>Ganancias por periodo</span><span class="row mut" style="font-size:12px;font-weight:500"><span><span class="dot" style="background:#10b981"></span>Ingresos</span><span><span class="dot" style="background:#f43f5e"></span>Egresos</span><span><span class="dot" style="background:#6366f1"></span>Andrés</span><span><span class="dot" style="background:#d946ef"></span>Matilde</span></span></h2><div id="histChart"></div></div>
  <div class="card"><h2>Detalle</h2><div id="hist" style="overflow:auto"></div></div>
@@ -238,8 +268,8 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
   <div class="row" style="margin-top:10px"><input id="nuevaPersona" placeholder="Nombre"><input id="nuevoColor" type="color" value="#f9e79f" style="width:50px;padding:3px"><button class="btn" onclick="nuevaPersona()">Agregar persona</button></div></div>
  <div class="card"><h2><span class="t"><i style="background:var(--in)">📌</i>Gastos fijos</span><span class="mut" style="font-size:12px;font-weight:500">Aparecen solos en cada periodo nuevo</span></h2><div id="cfgFijos" class="chips"></div>
   <div class="row" style="margin-top:10px"><input id="nuevoFijo" placeholder="Ej: LUZ"><button class="btn" onclick="nuevoFijo()">Agregar fijo</button></div></div>
- <div class="card"><h2><span class="t"><i style="background:var(--in)">🎨</i>Categorías</span><span class="mut" style="font-size:12px;font-weight:500">Cambia el nombre o el color; los gastos se actualizan solos</span></h2><div id="cfgCats"></div>
-  <div class="row" style="margin-top:10px"><input id="nuevaCat" placeholder="Ej: Transporte"><input id="nuevaCatCol" type="color" value="#ec4899" style="width:50px;padding:3px"><button class="btn" onclick="nuevaCat()">Agregar categoría</button></div></div>
+ <div class="card"><h2><span class="t"><i style="background:var(--in)">🎨</i>Categorías</span><span class="mut" style="font-size:12px;font-weight:500">Toca el ícono para cambiarlo; nombre y color también. Los gastos se actualizan solos</span></h2><div id="cfgCats"></div>
+  <div class="row" style="margin-top:10px"><button class="icoBtn" id="nuevaCatIco" type="button" title="Elegir ícono" onclick="elegirIcono(this,this.textContent,e=>this.textContent=e)">📦</button><input id="nuevaCat" placeholder="Ej: Transporte"><input id="nuevaCatCol" type="color" value="#ec4899" style="width:50px;padding:3px"><button class="btn" onclick="nuevaCat()">Agregar categoría</button></div></div>
  <div class="card"><h2><span class="t"><i style="background:var(--in)">🏷️</i>Catálogo de gastos y categorías</span></h2><p class="mut">Se aprende solo de lo que escribes. Aquí puedes cambiar la categoría de cada gasto.</p><div id="cfgCat" style="max-height:440px;overflow:auto"></div></div>
 </section>
 </main>
@@ -313,9 +343,31 @@ const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','
 const MES3=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 /* categorías: se guardan en DB.cats = [{n:'Mercado',c:'#10b981'}, …] */
 const CATS_BASE=[['Servicios','#6366f1'],['Mercado','#10b981'],['Restaurantes','#f59e0b'],['Casa','#06b6d4'],['Otros','#a3a3c2']];
-function catsD(){if(!DB.cats||!DB.cats.length)DB.cats=CATS_BASE.map(([n,c])=>({n,c}));return DB.cats}
+/* íconos: cada categoría guarda x.i (emoji). Si no tiene, se adivina por el nombre */
+const ICONOS={'Comida y mercado':'🛒🥦🍎🥩🍗🥖🧀🥛🍳🍽️🍔🍕🌮🍜☕🍺🍷🧃🍰🍦','Casa':'🏠🛋️🛏️🧹🧺🧼🔧🔨🪴🚿🪑🔑','Servicios':'💡💧🔥📶📱☎️📺🗑️🧾','Transporte':'🚗⛽🚕🚌🚇🏍️🚲✈️🅿️🛞','Salud y cuidado':'💊🏥🩺🦷👓💇💅🧴🏋️','Familia y ocio':'👶🧸🎓📚🎮🎬🎁🎉🐶🐱👕👟🛍️🏖️','Dinero':'💰💵💳🏦📈📉🪙🧮💼','Otros':'📦⭐❤️🔖📌❓'};
+const ICO_ADIV=[[/servic|luz|agua|gas|internet|celu|tel/i,'💡'],[/mercad|super|compra/i,'🛒'],[/restau|comida|almuer|domicil/i,'🍽️'],[/casa|hogar|arriendo/i,'🏠'],[/transp|gasol|carro|moto|uber|taxi/i,'🚗'],[/salud|droga|medic|farma/i,'💊'],[/ropa/i,'👕'],[/educ|colegio|estud/i,'🎓'],[/mascot|perro|gato/i,'🐶'],[/ocio|diver|cine|paseo/i,'🎉'],[/bebe|niñ|hij/i,'👶'],[/banco|credit|deuda|préstamo|prestamo/i,'🏦']];
+const GASTOS=['egresos','matilde','andres'];
+function icoAdiv(n){const r=ICO_ADIV.find(([re])=>re.test(n||''));return r?r[1]:'📦'}
+function catsD(){if(!DB.cats||!DB.cats.length)DB.cats=CATS_BASE.map(([n,c])=>({n,c}));DB.cats.forEach(x=>{if(!x.i)x.i=icoAdiv(x.n)});return DB.cats}
 function catsL(){return catsD().map(x=>x.n)}
 function colCat(k){const x=catsD().find(y=>y.n===k);return x?x.c:'#a3a3c2'}
+function icoCat(k){const x=catsD().find(y=>y.n===k);return x?x.i:'📦'}
+// ícono con fondo suave de su color
+const chipCat=k=>`<span class="ci" style="background:color-mix(in srgb,${colCat(k)} 22%,transparent)">${icoCat(k)}</span>`;
+const optsCat=sel=>catsL().map(k=>`<option value="${esc(k)}" ${k===sel?'selected':''}>${icoCat(k)} ${esc(k)}</option>`).join('');
+// selector de íconos flotante junto al botón
+function elegirIcono(btn,actual,alElegir){cerrarIco();const p=document.createElement('div');p.id='icoPop';
+ p.innerHTML=Object.entries(ICONOS).map(([g,s])=>`<div class="g">${g}</div><div class="e">${[...new Intl.Segmenter().segment(s)].map(x=>`<button data-e="${x.segment}" class="${x.segment===actual?'on':''}">${x.segment}</button>`).join('')}</div>`).join('')
+  +'<div class="g">Otro emoji</div><div class="row"><input id="icoOtro" placeholder="Pega un emoji" style="flex:1"><button class="btn" id="icoOk">Usar</button></div>';
+ document.body.appendChild(p);const r=btn.getBoundingClientRect(),w=p.offsetWidth,h=p.offsetHeight;
+ p.style.left=Math.max(16,Math.min(r.left,innerWidth-w-16))+'px';p.style.top=(r.bottom+6+h<innerHeight?r.bottom+6:Math.max(8,r.top-h-6))+'px';
+ const fin=e=>{if(e){alElegir(e)}cerrarIco()};
+ p.onclick=e=>{const b=e.target.closest('[data-e]');if(b)fin(b.dataset.e)};
+ $('icoOk').onclick=()=>{const v=[...new Intl.Segmenter().segment($('icoOtro').value.trim())][0];if(v)fin(v.segment)};
+ setTimeout(()=>{document.addEventListener('pointerdown',fueraIco);document.addEventListener('keydown',escIco)},0)}
+function fueraIco(e){if(!e.target.closest('#icoPop'))cerrarIco()}
+function escIco(e){if(e.key==='Escape')cerrarIco()}
+function cerrarIco(){const p=$('icoPop');if(p)p.remove();document.removeEventListener('pointerdown',fueraIco);document.removeEventListener('keydown',escIco)}
 function canon(k){const l=catsL();return l.includes(k)?k:(l.includes('Otros')?'Otros':l[0])}
 const fmt=n=>{const r=Math.round(n||0);return(r<0?'-$':'$')+Math.abs(r).toLocaleString('es-CO')};
 const corto=n=>{n=Math.round(n||0);const a=Math.abs(n);return a>=1e6?'$'+(n/1e6).toLocaleString('es-CO',{maximumFractionDigits:1})+'M':a>=1e3?'$'+Math.round(n/1e3)+'k':'$'+n};
@@ -502,7 +554,7 @@ function montarRapido(id,tipo){const q=$(id),[n,v,b]=q.querySelectorAll('input,b
  cam.onclick=()=>{if(foto){foto=null;pintarCam();return}pedirArchivo(f=>{foto=f;pintarCam();(n.value.trim()?v:n).focus()})};
  pintarCam();q.insertBefore(cam,b);
  const agregar=()=>{const p=P();if(!p||p.cerrado)return;if(!n.value.trim())return n.focus();
-  const it={d:up(n.value),v:num(v.value)};if(tipo==='egresos')it.cat=catDe(it.d);p[tipo].push(it);n.value='';v.value='';save();renderPeriodo();
+  const it={d:up(n.value),v:num(v.value)};it.cat=catDe(it.d);p[tipo].push(it);n.value='';v.value='';save();renderPeriodo();
   if(foto){const f=foto;foto=null;pintarCam();ponerComp(it,f).then(ok=>ok&&estado('🧾 Comprobante guardado'))}
   $(id).querySelector('input').focus()};
  n.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();v.focus()}});
@@ -513,6 +565,10 @@ montarRapido('qE','egresos');montarRapido('qM','matilde');montarRapido('qA','and
 function filaValor(it,lock,onch){const i=document.createElement('input');i.inputMode='numeric';i.placeholder='$0';i.value=it.v?fmt(it.v):'';i.disabled=lock;
  i.oninput=()=>{it.v=num(i.value);save();onch()};i.onblur=()=>i.value=it.v?fmt(it.v):'';i.onfocus=()=>i.select();return i}
 function filaTexto(it,campo,lock,ph){const i=document.createElement('input');i.value=it[campo]||'';i.placeholder=ph||'';i.disabled=lock;i.oninput=()=>{it[campo]=i.value;save()};return i}
+// fila de gasto de Matilde/Andrés: nombre con ícono, valor y categoría
+function filaGastoCat(tr,it,lock){const k=canon(it.cat||catDe(it.d));const c=td(tr,'',filaTexto(it,'d',lock));c.style.display='flex';c.style.alignItems='center';
+ c.insertAdjacentHTML('afterbegin',chipCat(k));td(tr,'v',filaValor(it,lock,resumen));
+ const s=document.createElement('select');s.innerHTML=optsCat(k);s.disabled=lock;s.onchange=()=>{it.cat=s.value;DB.catMap[up(it.d)]=s.value;save();renderPeriodo()};td(tr,'c',s)}
 function td(tr,cls,el){const c=tr.insertCell();if(cls)c.className=cls;if(el)c.appendChild(el);return c}
 function btnX(lock,fn){const b=document.createElement('button');b.className='x';b.textContent='✕';b.title='Quitar';b.disabled=lock;b.onclick=fn;return b}
 /* ================= comprobantes ================= */
@@ -669,18 +725,18 @@ function renderPeriodo(){const p=P();
   r.append(add,menu,qp);d.appendChild(r);$('entradas').appendChild(d)});
  const t=document.createElement('table');t.innerHTML='<tr><th>Gasto</th><th class="v" style="text-align:right">Valor</th><th class="c">Categoría</th><th class="n">Nota</th><th></th><th></th></tr>';
  p.egresos.forEach((it,i)=>{const tr=t.insertRow();const c=td(tr,'',filaTexto(it,'d',lock));c.style.display='flex';c.style.alignItems='center';
-  c.insertAdjacentHTML('afterbegin',`<span class="dot" style="background:${colCat(canon(it.cat||catDe(it.d)))};margin-left:6px"></span>`);
+  c.insertAdjacentHTML('afterbegin',chipCat(canon(it.cat||catDe(it.d))));
   td(tr,'v',filaValor(it,lock,resumen));
-  const s=document.createElement('select');s.innerHTML=catsL().map(k=>`<option ${k===canon(it.cat||catDe(it.d))?'selected':''}>${k}</option>`).join('');s.disabled=lock;
+  const s=document.createElement('select');s.innerHTML=optsCat(canon(it.cat||catDe(it.d)));s.disabled=lock;
   s.onchange=()=>{it.cat=s.value;DB.catMap[up(it.d)]=s.value;save();renderPeriodo()};td(tr,'c',s);
   td(tr,'n',filaTexto(it,'nota',lock,'nota'));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.egresos,i)))});
  $('salidas').appendChild(t);$('salidas').insertAdjacentHTML('beforeend','<div class="tot">Total egresos: <span class="r" id="totE"></span></div>');
  const tm=document.createElement('table');
- p.matilde.forEach((it,i)=>{const tr=tm.insertRow();td(tr,'',filaTexto(it,'d',lock));td(tr,'v',filaValor(it,lock,resumen));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.matilde,i)))});
+ p.matilde.forEach((it,i)=>{const tr=tm.insertRow();filaGastoCat(tr,it,lock);td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.matilde,i)))});
  if(!p.matilde.length)$('matilde').innerHTML='<p class="mut" style="margin:4px 0">Sin gastos de Matilde en este periodo.</p>';
  $('matilde').appendChild(tm);$('matilde').insertAdjacentHTML('beforeend','<div class="tot">Total Matilde: <span class="r" id="totM"></span></div>');
  const ta=document.createElement('table');
- p.andres.forEach((it,i)=>{const tr=ta.insertRow();td(tr,'',filaTexto(it,'d',lock));td(tr,'v',filaValor(it,lock,resumen));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.andres,i)))});
+ p.andres.forEach((it,i)=>{const tr=ta.insertRow();filaGastoCat(tr,it,lock);td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.andres,i)))});
  if(!p.andres.length)$('andres').innerHTML='<p class="mut" style="margin:4px 0">Sin gastos de Andrés en este periodo.</p>';
  $('andres').appendChild(ta);$('andres').insertAdjacentHTML('beforeend','<div class="tot">Total Andrés: <span class="r" id="totA"></span></div>');
  resumen()}
@@ -703,7 +759,7 @@ function resumen(){const p=P();if(!p)return;const c=calc(p);
  <div><span>Gastos de Andrés</span><b class="r">− ${fmt(c.ta)}</b></div>
  <div class="big"><span>👨 Andrés</span><span class="g">${fmt(c.andres)}</span></div><div class="big" style="border:none"><span>👩 Matilde</span><span class="g">${fmt(c.matilde)}</span></div>`;
  const pc={};p.egresos.forEach(i=>{const k=canon(i.cat||catDe(i.d));pc[k]=(pc[k]||0)+num(i.v)});const ds=Object.entries(pc).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
- $('cats').innerHTML=ds.length?`<div class="donut">${donut(ds,c.te)}<div class="leg" style="flex:1">${ds.map(([k,v])=>`<div><span><span class="dot" style="background:${colCat(k)}"></span>${k}</span><b>${Math.round(v/c.te*100)}%</b></div>`).join('')}</div></div>`:'<p class="mut">Sin egresos todavía.</p>';
+ $('cats').innerHTML=ds.length?`<div class="donut">${donut(ds,c.te)}<div class="leg" style="flex:1">${ds.map(([k,v])=>`<div><span>${chipCat(k)}${esc(k)}</span><b>${Math.round(v/c.te*100)}%</b></div>`).join('')}</div></div>`:'<p class="mut">Sin egresos todavía.</p>';
  const mx=Math.max(1,...c.porP.map(x=>x.t));
  $('porPer').innerHTML=c.porP.map(x=>`<div class="hbar"><div class="row"><span><span class="dot" style="background:${x.color}"></span>${esc(x.nombre)}</span><b>${fmt(x.t)}</b></div><div class="tr"><i style="width:${x.t/mx*100}%;background:${x.color}"></i></div></div>`).join('')||'<p class="mut">Sin personas.</p>';
  if($('totE'))$('totE').textContent=fmt(c.te);if($('totM'))$('totM').textContent=fmt(c.tm);if($('totA'))$('totA').textContent=fmt(c.ta);
@@ -718,6 +774,46 @@ function renderHist(){const ps=periodosOrd();
  $('hist').innerHTML=`<table><tr><th>Periodo</th><th>Tipo</th><th style="text-align:right">Ingresos</th><th style="text-align:right">Egresos</th><th style="text-align:right">Gastos Matilde</th><th style="text-align:right">Gastos Andrés</th><th style="text-align:right">Andrés</th><th style="text-align:right">Matilde</th></tr>`+
  cs.reverse().map(({p,c})=>`<tr><td><a href="#" style="color:var(--pri);font-weight:700" onclick="DB.actual='${p.id}';save();tab('periodo');return false">${esc(p.nombre)}</a></td><td>${cap(p.tipo)}${p.cerrado?' 🔒':''}</td><td style="text-align:right" class="g">${fmt(c.ti)}</td><td style="text-align:right" class="r">${fmt(c.te)}</td><td style="text-align:right">${fmt(c.tm)}</td><td style="text-align:right">${fmt(c.ta)}</td><td style="text-align:right"><b>${fmt(c.andres)}</b></td><td style="text-align:right"><b>${fmt(c.matilde)}</b></td></tr>`).join('')+'</table>'}
 
+/* ================= estadísticas ================= */
+let ST_ID=null;// periodo que se mira en Estadísticas (solo en esta pantalla)
+// variación entre a (ahora) y b (antes). En gastos, subir es malo (rojo)
+function dlt(a,b,gasto){if(!b&&!a)return'<span class="dl eq">sin datos</span>';if(!b)return'<span class="dl eq">nuevo</span>';
+ const d=a-b,pc=Math.round(d/b*100);if(!d)return'<span class="dl eq">= igual</span>';
+ const cls=d>0?(gasto?'gup':'up'):(gasto?'gdn':'dn');return`<span class="dl ${cls}">${d>0?'▲':'▼'} ${Math.abs(pc)}% · ${d>0?'+':'−'}${corto(Math.abs(d))}</span>`}
+function porCat(arr){const o={};(arr||[]).forEach(i=>{const v=num(i.v);if(!v)return;const k=canon(i.cat||catDe(i.d));o[k]=(o[k]||0)+v});return o}
+function renderEstad(){const ps=periodosOrd();$('stVacio').classList.toggle('hide',!!ps.length);$('stCont').classList.toggle('hide',!ps.length);
+ if(!ps.length){$('stPer').innerHTML='';$('stRango').textContent='';$('stVs').textContent='';return}
+ if(!ps.some(p=>p.id===ST_ID))ST_ID=DB.actual&&ps.some(p=>p.id===DB.actual)?DB.actual:ps[ps.length-1].id;
+ const ix=ps.findIndex(p=>p.id===ST_ID),p=ps[ix],ant=ps[ix-1]||null,a=pd(p.inicio),b=pd(p.fin);
+ $('stPer').innerHTML=[...ps].reverse().map(x=>`<option value="${x.id}" ${x.id===ST_ID?'selected':''}>${esc(x.nombre)}</option>`).join('');
+ $('stPer').onchange=e=>{ST_ID=e.target.value;renderEstad()};
+ $('stRango').textContent=`📅 ${fCorta(a)} → ${fCorta(b)} ${b.getFullYear()}`;
+ $('stVs').innerHTML=ant?`Comparado con <b>${esc(ant.nombre)}</b>`:'Es el primer periodo: no hay con qué comparar';
+ // ---- personas ----
+ const totP=(per,pid)=>{const e=per&&per.entradas.find(x=>x.pid===pid);return e?sum(e.items):0};
+ const ids=[...new Set([...p.entradas.map(e=>e.pid),...(ant?ant.entradas.map(e=>e.pid):[])])];
+ const hist=ps.slice(Math.max(0,ix-7),ix+1);
+ $('stPersonas').innerHTML=ids.map(pid=>{const per=DB.personas.find(x=>x.id===pid)||{nombre:'?',color:'#a3a3c2'};
+  const e=p.entradas.find(x=>x.pid===pid),its=e?e.items.filter(i=>num(i.v)):[],t=totP(p,pid),t0=totP(ant,pid);
+  const vs=hist.map(h=>totP(h,pid)),mx=Math.max(1,...vs);
+  return`<div class="st-p" style="--pc:${per.color}"><div class="row" style="justify-content:space-between"><div class="row"><span class="av">${esc(per.nombre.slice(0,2))}</span><b>${esc(per.nombre)}</b></div>${ant?dlt(t,t0):''}</div>
+  <div class="st-big">${fmt(t)}</div><div class="mut" style="font-size:12px">${ant?'Antes: '+fmt(t0):'&nbsp;'}</div>
+  <div class="spark">${vs.map((v,i)=>`<i class="${i===vs.length-1?'on':''}" style="height:${Math.max(4,v/mx*100)}%" title="${esc(hist[i].nombre)}: ${fmt(v)}"></i>`).join('')}</div>
+  <div class="st-meta"><span>${its.length} entrada${its.length===1?'':'s'}</span><span>Promedio ${fmt(its.length?t/its.length:0)}</span></div></div>`}).join('')
+  ||'<p class="mut">Nadie tiene entradas en este periodo.</p>';
+ // ---- gastos de Matilde y Andrés ----
+ [['stM','matilde','👩','Gastos de Matilde','#d946ef'],['stA','andres','👨','Gastos de Andrés','#6366f1']].forEach(([el,k,ic,tit,col])=>{
+  const pc=porCat(p[k]),p0=ant?porCat(ant[k]):{},tot=sum(p[k]||[]),tot0=ant?sum(ant[k]||[]):0;
+  const ds=Object.entries(pc).sort((x,y)=>y[1]-x[1]);
+  const todas=[...new Set([...ds.map(x=>x[0]),...Object.keys(p0)])].sort((x,y)=>(pc[y]||0)-(pc[x]||0)||(p0[y]||0)-(p0[x]||0));
+  let h=`<h2><span class="t"><i style="background:color-mix(in srgb,${col} 18%,transparent)">${ic}</i>${tit}</span>${ant?dlt(tot,tot0,true):''}</h2>
+  <div class="st-big">${fmt(tot)}</div><div class="mut" style="font-size:12px">${ant?'Periodo anterior: '+fmt(tot0):''}</div>`;
+  if(!ds.length){$(el).innerHTML=h+'<p class="mut">Sin gastos en este periodo.</p>';return}
+  const [tk,tv]=ds[0];
+  h+=`<div class="st-top">${chipCat(tk)}<div><div class="mut" style="font-size:12px">Donde más se gastó</div><b>${esc(tk)}: ${fmt(tv)}</b> <span class="mut">(${Math.round(tv/tot*100)}% del total)</span></div></div>
+  <div class="donut">${donut(ds,tot)}<table class="st-cats" style="flex:1">${todas.map(c=>`<tr><td>${chipCat(c)}${esc(c)}</td><td class="n"><b>${fmt(pc[c]||0)}</b><div class="mut" style="font-size:11px">${tot?Math.round((pc[c]||0)/tot*100):0}%</div></td>${ant?`<td class="n">${dlt(pc[c]||0,p0[c]||0,true)}</td>`:''}</tr>`).join('')}</table></div>`;
+  $(el).innerHTML=h})}
+
 /* ================= configuración ================= */
 function renderConfig(){$('cfgPersonas').innerHTML='';const t=document.createElement('table');
  DB.personas.forEach(x=>{const tr=t.insertRow();const c=document.createElement('input');c.type='color';c.value=x.color;c.style.cssText='width:44px;padding:2px';c.oninput=()=>{x.color=c.value;save()};td(tr,'xx',c);
@@ -727,39 +823,41 @@ function renderConfig(){$('cfgPersonas').innerHTML='';const t=document.createEle
  $('cfgFijos').innerHTML=DB.fijos.map((f,i)=>`<span>${esc(f)}<button class="x" onclick="DB.fijos.splice(${i},1);save();renderConfig()">✕</button></span>`).join('');
  $('cfgCats').innerHTML='';const tk=document.createElement('table');
  catsD().forEach((x,i)=>{const tr=tk.insertRow();
+  const ib=document.createElement('button');ib.className='icoBtn';ib.type='button';ib.textContent=x.i;ib.title='Cambiar ícono';
+  ib.onclick=()=>elegirIcono(ib,x.i,e=>{x.i=e;ib.textContent=e;save()});td(tr,'xx',ib).style.width='48px';
   const c=document.createElement('input');c.type='color';c.value=x.c;c.style.cssText='width:44px;padding:2px';c.oninput=()=>{x.c=c.value;save()};td(tr,'xx',c);
   const n=document.createElement('input');n.value=x.n;n.onchange=()=>renombrarCat(x,n.value.trim(),n);td(tr,'',n);
-  const usos=DB.periodos.reduce((s,p)=>s+p.egresos.filter(i=>canon(i.cat||catDe(i.d))===x.n).length,0);
+  const usos=DB.periodos.reduce((s,p)=>s+GASTOS.reduce((t,g)=>t+(p[g]||[]).filter(i=>canon(i.cat||catDe(i.d))===x.n).length,0),0);
   td(tr,'mut').textContent=usos+' gasto'+(usos===1?'':'s');
   td(tr,'xx',btnX(catsD().length<2,()=>borrarCat(x,usos)))});
  $('cfgCats').appendChild(tk);
  $('cfgCat').innerHTML='';const tc=document.createElement('table');tc.innerHTML='<tr><th>Gasto</th><th>Veces</th><th>Último valor</th><th>Categoría</th></tr>';
- catalogo('egresos').forEach(c=>{const tr=tc.insertRow();tr.insertCell().innerHTML=`<span class="dot" style="background:${colCat(catDe(c.nombre))}"></span>${esc(c.nombre)}`;tr.insertCell().textContent=c.usos;tr.insertCell().textContent=fmt(c.ultimo);
-  const s=document.createElement('select');s.innerHTML=catsL().map(k=>`<option ${k===catDe(c.nombre)?'selected':''}>${k}</option>`).join('');s.onchange=()=>{DB.catMap[c.nombre]=s.value;save();renderConfig()};td(tr,'c',s)});
+ catalogo('egresos').forEach(c=>{const tr=tc.insertRow();tr.insertCell().innerHTML=`${chipCat(catDe(c.nombre))}${esc(c.nombre)}`;tr.insertCell().textContent=c.usos;tr.insertCell().textContent=fmt(c.ultimo);
+  const s=document.createElement('select');s.innerHTML=optsCat(catDe(c.nombre));s.onchange=()=>{DB.catMap[c.nombre]=s.value;save();renderConfig()};td(tr,'c',s)});
  $('cfgCat').appendChild(tc)}
 function nuevaPersona(){const n=up($('nuevaPersona').value);if(!n)return;DB.personas.push({id:uid(),nombre:n,color:$('nuevoColor').value,activa:true});$('nuevaPersona').value='';save();renderConfig()}
 function nuevaCat(){const n=$('nuevaCat').value.trim();if(!n)return;
  if(catsL().some(k=>k.toLowerCase()===n.toLowerCase()))return avisar('Ya existe una categoría con ese nombre.');
- catsD().push({n,c:$('nuevaCatCol').value});$('nuevaCat').value='';save();renderConfig()}
+ catsD().push({n,c:$('nuevaCatCol').value,i:$('nuevaCatIco').textContent});$('nuevaCat').value='';$('nuevaCatIco').textContent='📦';save();renderConfig()}
 // cambia el nombre en la lista y en todo lo que la usa (gastos, catálogo y semilla)
 function renombrarCat(x,nuevo,inp){const viejo=x.n;if(!nuevo||nuevo===viejo){inp.value=viejo;return}
  if(catsL().some(k=>k!==viejo&&k.toLowerCase()===nuevo.toLowerCase())){inp.value=viejo;return avisar('Ya existe una categoría con ese nombre.')}
  const S=SEM();for(const k in S)if(S[k][0]===viejo&&!DB.catMap[k])DB.catMap[k]=nuevo;
  for(const k in DB.catMap)if(DB.catMap[k]===viejo)DB.catMap[k]=nuevo;
- DB.periodos.forEach(p=>p.egresos.forEach(i=>{if(i.cat===viejo)i.cat=nuevo}));
+ DB.periodos.forEach(p=>GASTOS.forEach(g=>(p[g]||[]).forEach(i=>{if(i.cat===viejo)i.cat=nuevo})));
  x.n=nuevo;save();renderConfig()}
 async function borrarCat(x,usos){const l=catsL().filter(k=>k!==x.n),dest=l.includes('Otros')?'Otros':l[0];
  if(!await preguntar(usos?`Sus ${usos} gastos pasarán a "${dest}".`:'No tiene gastos.',{titulo:'¿Borrar la categoría "'+x.n+'"?',si:'Borrar',peligro:true}))return;
  const S=SEM();for(const k in S)if(S[k][0]===x.n&&!DB.catMap[k])DB.catMap[k]=dest;
  for(const k in DB.catMap)if(DB.catMap[k]===x.n)DB.catMap[k]=dest;
- DB.periodos.forEach(p=>p.egresos.forEach(i=>{if(i.cat===x.n)i.cat=dest}));
+ DB.periodos.forEach(p=>GASTOS.forEach(g=>(p[g]||[]).forEach(i=>{if(i.cat===x.n)i.cat=dest})));
  DB.cats=catsD().filter(y=>y!==x);save();renderConfig()}
 function nuevoFijo(){const n=up($('nuevoFijo').value);if(!n||DB.fijos.includes(n))return;DB.fijos.push(n);$('nuevoFijo').value='';save();renderConfig()}
 
 /* ================= pestañas ================= */
 function tab(t){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
- ['periodo','historial','config'].forEach(x=>$('t-'+x).classList.toggle('hide',x!==t));
- if(t==='periodo')renderPeriodo();if(t==='historial')renderHist();if(t==='config')renderConfig()}
+ ['periodo','estad','historial','config'].forEach(x=>$('t-'+x).classList.toggle('hide',x!==t));
+ if(t==='periodo')renderPeriodo();if(t==='historial')renderHist();if(t==='estad')renderEstad();if(t==='config')renderConfig()}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
 /* secciones plegables (se recuerda en este navegador) */
 // porDefecto: cómo arranca si el usuario nunca la ha tocado (las secciones arrancan cerradas)
