@@ -202,6 +202,17 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
 .fab:active{transform:scale(.94)}.fab.oculto{display:none!important}
 .nube-dot{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 20%,transparent);margin-left:auto;flex:none}
 .nube-dot.w{background:#f59e0b;box-shadow:0 0 0 4px #f59e0b33}.nube-dot.e{background:var(--bad);box-shadow:0 0 0 4px color-mix(in srgb,var(--bad) 25%,transparent)}
+/* vista de Matilde */
+body.modo-matilde header .tabs,body.modo-matilde #menuBtn,body.modo-matilde #fab,body.modo-matilde .drawer{display:none!important}
+body.modo-matilde main{max-width:720px}
+.mt-hero{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:20px;border-radius:18px;margin-bottom:16px;color:#fff;background:linear-gradient(135deg,#d946ef,#a21caf);box-shadow:var(--sh)}
+.mt-hola{font-size:20px;font-weight:800}.mt-per{opacity:.85;font-size:13px;margin-top:2px}
+.mt-tot{text-align:right;display:grid}.mt-tot small{opacity:.85;font-weight:600}.mt-tot b{font-size:28px;font-weight:800;letter-spacing:-.5px}.mt-tot span{font-size:12px;opacity:.85}
+.mt-aviso{background:var(--badbg);color:var(--bad);font-weight:600}
+.mt-f{display:grid;grid-template-columns:1fr 130px 150px 44px auto;gap:8px}.mt-f>*{height:44px;min-width:0}.mt-f #mtV{text-align:right;font-weight:700}
+.mt-it{display:grid;grid-template-columns:28px 1fr 120px 140px auto;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--bd)}.mt-it:first-child{border-top:none}
+.mt-it input,.mt-it select{border:1px solid transparent;background:transparent;padding:7px 8px;min-width:0}.mt-it input:hover,.mt-it select:hover{border-color:var(--bd)}
+.mt-it .mt-v{text-align:right;font-weight:700}.mt-acc{display:flex;gap:2px}.mt-ci .ci{margin:0}
 /* ===== celular ===== */
 @media(max-width:640px){
  html,body{overflow-x:hidden}
@@ -271,6 +282,10 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
  /* historial */
  .hc{height:170px;gap:10px}.hc .bars{height:130px}.hc .bars i{width:11px}.hc .col{min-width:54px}
  #hist table{font-size:12px;min-width:560px}
+ /* vista de Matilde */
+ .mt-hero{padding:16px;border-radius:16px;margin-bottom:12px}.mt-hola{font-size:18px}.mt-tot b{font-size:24px}
+ .mt-f{grid-template-columns:1fr 1fr 44px}.mt-f #mtD{grid-column:1/-1}.mt-f #mtOk{grid-column:1/-1}
+ .mt-it{grid-template-columns:28px 1fr auto;row-gap:0}.mt-it .mt-v{grid-column:2;text-align:left;padding-left:8px}.mt-it select{grid-column:3;grid-row:2;max-width:130px}.mt-it .mt-acc{grid-column:3;grid-row:1}
  /* configuración */
  #t-config .row input:not([type=color]){flex:1;min-width:0}
 }
@@ -368,12 +383,33 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
   <div class="row" style="margin-top:10px"><button class="icoBtn" id="nuevaCatIco" type="button" title="Elegir ícono" onclick="elegirIcono(this,this.textContent,e=>this.textContent=e)">📦</button><input id="nuevaCat" placeholder="Ej: Transporte"><input id="nuevaCatCol" type="color" value="#ec4899" style="width:50px;padding:3px"><button class="btn" onclick="nuevaCat()">Agregar categoría</button></div></div>
  <div class="card"><h2><span class="t"><i style="background:var(--in)">🏷️</i>Catálogo de gastos y categorías</span></h2><p class="mut">Se aprende solo de lo que escribes. Aquí puedes cambiar la categoría de cada gasto.</p><div id="cfgCat" style="max-height:440px;overflow:auto"></div></div>
 </section>
+<!-- pantalla de Matilde: solo sus gastos del periodo actual -->
+<section id="t-matilde" class="hide">
+ <div class="mt-hero">
+  <div><div class="mt-hola">Hola, Matilde 👋</div><div class="mt-per" id="mtPer">Cargando…</div></div>
+  <div class="mt-tot"><small>Tus gastos</small><b id="mtTot">$0</b><span id="mtN"></span></div>
+ </div>
+ <div id="mtCerrado" class="card mt-aviso hide">🔒 Este periodo está cerrado: puedes ver tus gastos pero ya no cambiarlos.</div>
+ <div id="mtSinPer" class="card empty hide"><b>🗓️</b><h2 style="justify-content:center">Aún no hay un periodo abierto</h2><p class="mut">Cuando Andrés abra el periodo podrás registrar tus gastos aquí.</p></div>
+ <div class="card" id="mtForm">
+  <h2><span class="t"><i style="background:color-mix(in srgb,#d946ef 18%,transparent)">➕</i>Registrar gasto</span></h2>
+  <div class="mt-f">
+   <input id="mtD" placeholder="¿En qué gastaste? (ej: farmacia)" autocomplete="off">
+   <input id="mtV" placeholder="$0" inputmode="numeric">
+   <select id="mtC"></select>
+   <button class="sec cam" id="mtCam" type="button" title="Adjuntar foto del comprobante">📷</button>
+   <button class="btn" id="mtOk">Agregar</button>
+  </div>
+ </div>
+ <div class="card"><h2><span class="t"><i style="background:color-mix(in srgb,#d946ef 18%,transparent)">👩</i>Mis gastos</span></h2><div id="mtLista"></div></div>
+ <button class="sec" onclick="salir()" style="width:100%;margin-top:4px">🚪 Cerrar sesión</button>
+</section>
 </main>
 
 <div id="login" class="modal hide"><div class="card" style="max-width:360px">
  <h2>☁️ Entrar a Cuentas Casa</h2>
  <form onsubmit="entrar(event)" style="display:flex;flex-direction:column;gap:10px">
-  <input id="lgCorreo" type="email" placeholder="Correo" autocomplete="username" required>
+  <input id="lgCorreo" type="text" placeholder="Usuario o correo" autocomplete="username" autocapitalize="none" spellcheck="false" required>
   <input id="lgClave" type="password" placeholder="Clave" autocomplete="current-password" required>
   <button class="btn" type="submit">Entrar</button>
   <p id="lgMsg" class="mut" style="margin:0"></p>
@@ -518,34 +554,83 @@ const hora=()=>new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-d
 async function nubeGuardar(){if(!USR||!LISTO||guardando)return;guardando=true;
  try{const ahora=new Date().toISOString();let r;
   // solo se guarda si la nube sigue en la versión que cargamos; si otro dispositivo guardó antes, no se pisa
-  if(VER)r=await SB.from('cuentas').update({datos:DB,actualizado:ahora}).eq('usuario',USR.id).eq('actualizado',VER).select('actualizado');
-  else r=await SB.from('cuentas').upsert({usuario:USR.id,datos:DB,actualizado:ahora}).select('actualizado');
+  const datos=datosParaNube();
+  if(VER)r=await SB.from('cuentas').update({datos,actualizado:ahora}).eq('usuario',USR.id).eq('actualizado',VER).select('actualizado');
+  else r=await SB.from('cuentas').upsert({usuario:USR.id,datos,actualizado:ahora}).select('actualizado');
   if(r.error){estado('⚠️ Sin conexión, reintentando… <a href="#" onclick="nubeGuardar();return false">reintentar</a>');setTimeout(nubeGuardar,15000);return}
   if(!r.data||!r.data.length)return conflicto();
-  VER=r.data[0].actualizado;pendiente=false;estado('☁️ Guardado '+hora());$('nubeInfo').textContent='Sesión: '+USR.email+' · último guardado '+hora()}
+  VER=r.data[0].actualizado;
+  if(MAT.ok){const okM=await syncMatilde();await syncCompartido();if(!okM){estado('⚠️ No pude guardar los gastos de Matilde, reintentando…');setTimeout(nubeGuardar,15000);return}}
+  pendiente=false;estado('☁️ Guardado '+hora());$('nubeInfo').textContent='Sesión: '+USR.email+' · último guardado '+hora()}
  finally{guardando=false}}
+
+/* ---- gastos de Matilde en su propia tabla (ella entra con su usuario y solo ve esto) ---- */
+const MAT={ok:false,snap:{}};// ok: la tabla existe y ya se cargó; snap: id → copia de lo que hay en la nube
+const filaMat=(it,pid)=>({periodo_id:pid,d:it.d||'',v:num(it.v),cat:it.cat||null,comp:it.comp||null});
+function datosParaNube(){if(!MAT.ok||!DB.matTabla)return DB;// los gastos de Matilde viven en su tabla, no en el bloque
+ return{...DB,periodos:DB.periodos.map(p=>({...p,matilde:[]}))}}
+async function cargarMatilde(){if(!USR||MODO!=='dueno')return;
+ let r=await SB.from('gastos_matilde').select('*').order('orden');if(r.error){MAT.ok=false;return}// sin la tabla: todo sigue como antes
+ if(!DB.matTabla){// primera vez: pasar los gastos de Matilde guardados en el bloque a la tabla
+  const nuevos=[];DB.periodos.forEach(p=>(p.matilde||[]).forEach((it,i)=>{if(!it.id)nuevos.push({...filaMat(it,p.id),orden:Date.now()/1000+i/1000})}));
+  if(nuevos.length){const ins=await SB.from('gastos_matilde').insert(nuevos);if(ins.error){estado('⚠️ No pude pasar los gastos de Matilde: '+ins.error.message);return}}
+  r=await SB.from('gastos_matilde').select('*').order('orden');if(r.error)return;DB.matTabla=true}
+ MAT.snap={};DB.periodos.forEach(p=>p.matilde=[]);
+ r.data.forEach(g=>{const p=DB.periodos.find(x=>x.id===g.periodo_id);if(!p)return;const it={id:g.id,d:g.d,v:+g.v,cat:g.cat||undefined,comp:g.comp||undefined};
+  p.matilde.push(it);MAT.snap[g.id]=JSON.stringify(filaMat(it,p.id))});
+ MAT.ok=true}
+// sube a la tabla lo que cambió en "Gastos de Matilde" desde esta app
+async function syncMatilde(){if(!MAT.ok)return true;let ok=true;const vistos=new Set();
+ for(const p of DB.periodos)for(const it of (p.matilde||[])){const f=filaMat(it,p.id),s=JSON.stringify(f);
+  if(!it.id){const r=await SB.from('gastos_matilde').insert(f).select('id').single();if(r.error){ok=false;continue}it.id=r.data.id;MAT.snap[it.id]=s}
+  else if(MAT.snap[it.id]!==s){const r=await SB.from('gastos_matilde').update(f).eq('id',it.id);if(r.error)ok=false;else MAT.snap[it.id]=s}
+  vistos.add(it.id)}
+ const borrar=Object.keys(MAT.snap).filter(id=>!vistos.has(id));
+ if(borrar.length){const r=await SB.from('gastos_matilde').delete().in('id',borrar);if(r.error)ok=false;else borrar.forEach(id=>delete MAT.snap[id])}
+ try{localStorage.setItem('cuentasCasa2',JSON.stringify(DB))}catch(e){}return ok}
+// lo que Matilde puede leer: el periodo más reciente y las categorías
+let compUlt='';
+async function syncCompartido(){const ps=periodosOrd(),p=ps[ps.length-1];if(!p)return;
+ const f={id:1,periodo_id:p.id,periodo_nombre:p.nombre,cerrado:!!p.cerrado,cats:catsD().map(x=>({n:x.n,c:x.c,i:x.i||null}))},s=JSON.stringify(f);
+ if(s===compUlt)return;const r=await SB.from('compartido').upsert({...f,actualizado:new Date().toISOString()});if(!r.error)compUlt=s}
 async function conflicto(){pendiente=false;await nubeCargar(true);
  avisar('Mientras tanto se guardaron cambios desde otro dispositivo. Ya cargué lo más reciente de la nube; si tu último cambio no aparece, hazlo de nuevo.','🔄 Datos actualizados')}
 async function nubeCargar(manual){if(!USR)return;if(pendiente&&!manual)return;
  const{data,error}=await SB.from('cuentas').select('datos,actualizado').eq('usuario',USR.id).maybeSingle();
  if(error){estado('⚠️ No pude leer la nube: '+error.message);return}
  if(data&&data.datos&&data.datos.version===2){if(LISTO&&data.actualizado===VER&&!manual)return;
-  DB=data.datos;VER=data.actualizado;LISTO=true;try{localStorage.setItem('cuentasCasa2',JSON.stringify(DB))}catch(e){}renderTodo();
-  if(migrarSemilla()){save();return}
+  const local=DB;DB=data.datos;VER=data.actualizado;LISTO=true;
+  if(DB.matTabla&&!MAT.ok)DB.periodos.forEach(p=>{const q=local.periodos&&local.periodos.find(x=>x.id===p.id);if(q&&q.matilde&&q.matilde.length)p.matilde=q.matilde});// mientras carga la tabla
+  await cargarMatilde();const migro=MAT.ok&&!data.datos.matTabla;
+  try{localStorage.setItem('cuentasCasa2',JSON.stringify(DB))}catch(e){}renderTodo();
+  if(MAT.ok)syncCompartido();
+  if(migrarSemilla()||migro){save();return}
   estado('☁️ Al día '+hora());$('nubeInfo').textContent='Sesión: '+USR.email+' · datos del '+new Date(data.actualizado).toLocaleString('es-CO')}
  else if(!data){ // primera vez: subir lo que hay en este navegador
   LISTO=true;VER=null;migrarSemilla();
   if(DB.periodos.length&&await preguntar('La nube está vacía. ¿Subir los datos que tienes en este computador ('+DB.periodos.length+' periodos)?',{titulo:'☁️ Nube vacía',si:'Subir'}))await nubeGuardar();
   else{estado('☁️ Nube vacía · puedes importar un respaldo en Configuración');$('nubeInfo').textContent='Sesión: '+USR.email}}}
+// "matilde" (sin @) es el usuario de Matilde; por dentro Supabase usa un correo
+const correoDe=u=>u.includes('@')?u:u.toLowerCase()+'@cuentas-casa.app';
 async function entrar(ev){ev.preventDefault();$('lgMsg').textContent='Entrando…';
- const{data,error}=await SB.auth.signInWithPassword({email:$('lgCorreo').value.trim(),password:$('lgClave').value});
- if(error){$('lgMsg').textContent='❌ '+(error.message==='Invalid login credentials'?'Correo o clave incorrectos':error.message);return}
- $('lgClave').value='';USR=data.user;$('login').classList.add('hide');nubeCargar(true)}
-async function salir(){if(pendiente)await nubeGuardar();await SB.auth.signOut();USR=null;LISTO=false;VER=null;$('login').classList.remove('hide')}
+ const{data,error}=await SB.auth.signInWithPassword({email:correoDe($('lgCorreo').value.trim()),password:$('lgClave').value});
+ if(error){$('lgMsg').textContent='❌ '+(error.message==='Invalid login credentials'?'Usuario o clave incorrectos':error.message);return}
+ $('lgClave').value='';USR=data.user;$('login').classList.add('hide');arrancar()}
+async function salir(){if(pendiente)await nubeGuardar();await SB.auth.signOut();USR=null;LISTO=false;VER=null;MAT.ok=false;
+ if(MODO==='matilde'){location.reload();return}$('login').classList.remove('hide')}
+let MODO='dueno';
+// según el rol: el dueño ve todo; Matilde solo su pantalla
+async function arrancar(){const r=await SB.from('roles').select('rol').eq('usuario',USR.id).maybeSingle();
+ MODO=r.data&&r.data.rol==='matilde'?'matilde':'dueno';
+ if(MODO==='matilde'){try{localStorage.removeItem('cuentasCasa2')}catch(e){}DB=dbNueva();
+  ['kpis','entradas','salidas','matilde','andres','resumen','cats','porPer','hist','histChart','stPersonas','stM','stA','selPer','stPer','cfgPersonas','cfgCat','cfgCats','cfgFijos','nubeInfo'].forEach(i=>{if($(i))$(i).innerHTML=''});document.body.classList.add('modo-matilde');tab('matilde');return cargarVistaMatilde()}
+ estado('⏳ Cargando de la nube…');nubeCargar(true)}
 async function iniciarNube(){const{data}=await SB.auth.getSession();
- if(data.session){USR=data.session.user;estado('⏳ Cargando de la nube…');nubeCargar(true)}else $('login').classList.remove('hide')}
+ if(data.session){USR=data.session.user;arrancar()}else $('login').classList.remove('hide')}
 // al volver a la app (p. ej. del celular al PC) traer lo último
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')nubeCargar()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return;
+ if(MODO==='matilde')return cargarVistaMatilde();
+ nubeCargar().then(async()=>{if(MAT.ok&&!pendiente){await cargarMatilde();renderTodo()}})});
 window.addEventListener('beforeunload',e=>{if(pendiente){nubeGuardar();e.preventDefault()}});
 
 async function escribirArchivo(nombre='cuentas-datos.json',sub){
@@ -698,7 +783,7 @@ async function comprimir(f){if(!f.type.startsWith('image/'))return f; // PDFs ta
  const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
  return new Promise(ok=>c.toBlob(b=>ok(b),'image/jpeg',0.72))}
 // sube un archivo (foto comprimida o PDF) y devuelve su ruta en el depósito
-async function subirArchivo(f){const b=await comprimir(f),ext=b.type==='application/pdf'?'pdf':'jpg',ruta=`${USR.id}/${DB.actual}/${Date.now()}.${ext}`;
+async function subirArchivo(f){const b=await comprimir(f),ext=b.type==='application/pdf'?'pdf':'jpg',ruta=`${USR.id}/${MODO==="matilde"?VM.pid:DB.actual}/${Date.now()}.${ext}`;
  const{error}=await SB.storage.from('comprobantes').upload(ruta,b,{contentType:b.type});if(error)throw error;return ruta}
 async function ponerComp(it,f){estado('⏳ Subiendo comprobante…');
  try{const ruta=await subirArchivo(f),viejo=it.comp;it.comp=ruta;delete URLS[viejo];save();renderPeriodo();if(viejo)SB.storage.from('comprobantes').remove([viejo]);return true}
@@ -717,7 +802,7 @@ const SECC=[['egresos','Egresos','#f43f5e'],['matilde','Gastos de Matilde','#d94
 function compsPeriodo(p=P()){const l=[];if(!p)return l;SECC.forEach(([k,nom,col])=>(p[k]||[]).forEach(it=>{if(it.comp)l.push({it,sec:nom,col,arr:p[k]})}));return l}
 let VZ={l:[],i:0,z:1,x:0,y:0};
 const esPdf=r=>/\.pdf$/i.test(r);
-async function verComp(it){const l=compsPeriodo();let i=l.findIndex(c=>c.it===it);if(i<0)return;
+async function verComp(it){const l=MODO==='matilde'?compsMatilde():compsPeriodo();let i=l.findIndex(c=>c.it===it);if(i<0)return;
  try{await urlsDe(l.map(c=>c.it.comp))}catch(e){return avisar(e.message,'No pude abrir el comprobante')}
  VZ={l,i,z:1,x:0,y:0};pintarThumbs();pintarVisor();const v=$('visor');v.classList.remove('hide');setTimeout(()=>v.classList.add('on'),15);
  document.body.style.overflow='hidden'}
@@ -725,7 +810,7 @@ function cerrarVisor(){const v=$('visor');v.classList.remove('on');document.body
 function pintarThumbs(){$('vzThumbs').innerHTML=VZ.l.map((c,i)=>{const u=URLS[c.it.comp]&&URLS[c.it.comp].u;
  return`<button data-i="${i}" style="--c:${c.col}">${esPdf(c.it.comp)?'<span>📄</span>':`<img src="${u}" loading="lazy" alt="">`}</button>`}).join('');
  $('vzThumbs').onclick=e=>{const b=e.target.closest('[data-i]');if(b)irVisor(+b.dataset.i)}}
-function pintarVisor(dir=0){const c=VZ.l[VZ.i];if(!c)return cerrarVisor();const u=URLS[c.it.comp].u,lock=P().cerrado;
+function pintarVisor(dir=0){const c=VZ.l[VZ.i];if(!c)return cerrarVisor();const u=URLS[c.it.comp].u,lock=MODO==='matilde'||P().cerrado;
  VZ.z=1;VZ.x=0;VZ.y=0;
  $('vzSec').textContent=c.sec;$('vzSec').style.background=c.col;$('vzTit').textContent=c.it.d||'Sin nombre';$('vzVal').textContent=c.it.v?fmt(c.it.v):'';
  $('vzCont').textContent=VZ.l.length>1?`${VZ.i+1} / ${VZ.l.length}`:'';
@@ -1001,7 +1086,7 @@ function nuevoFijo(){const n=up($('nuevoFijo').value);if(!n||DB.fijos.includes(n
 function tab(t){document.querySelectorAll('.tabs button,.dr-nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
  const nom={periodo:P()?P().nombre:'Periodo',estad:'Estadísticas',historial:'Historial',config:'Configuración'}[t];if($('hPer'))$('hPer').textContent=nom;
  $('fab').classList.toggle('oculto',t!=='periodo'||!P());
- ['periodo','estad','historial','config'].forEach(x=>$('t-'+x).classList.toggle('hide',x!==t));
+ ['periodo','estad','historial','config','matilde'].forEach(x=>$('t-'+x).classList.toggle('hide',x!==t));
  if(t==='periodo')renderPeriodo();if(t==='historial')renderHist();if(t==='estad')renderEstad();if(t==='config')renderConfig()}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
 document.querySelectorAll('.dr-nav button').forEach(b=>b.onclick=()=>{menu(false);tab(b.dataset.t);scrollTo({top:0})});
@@ -1040,6 +1125,57 @@ document.querySelectorAll('#contenido .card>h2>.t').forEach(t=>{const c=t.closes
  t.insertAdjacentHTML('afterbegin','<span class="chev">▾</span>');h.title='Mostrar / ocultar';h.classList.add('pleg');if(plegado(k,undefined,true))c.classList.add('plegada');
  // toda la barra abre/cierra, menos sus propios botones y menús
  h.onclick=e=>{if(e.target.closest('button,select,input,a'))return;c.classList.toggle('plegada');plegado(k,c.classList.contains('plegada'))}});
-function renderTodo(){migrarRojas();tab(document.querySelector('.tabs button.on').dataset.t)}
+function renderTodo(){if(MODO==='matilde')return pintarVistaMatilde();migrarRojas();tab(document.querySelector('.tabs button.on').dataset.t)}
+
+/* ================= vista de Matilde ================= */
+const VM={pid:null,nombre:'',cerrado:false,cats:[],items:[],foto:null};
+const compsMatilde=()=>VM.items.filter(it=>it.comp).map(it=>({it,sec:'Mis gastos',col:'#d946ef'}));
+async function cargarVistaMatilde(){const c=await SB.from('compartido').select('*').maybeSingle();
+ if(c.error){$('mtPer').textContent='No pude cargar: '+c.error.message;return}
+ const d=c.data||{};VM.pid=d.periodo_id||null;VM.nombre=d.periodo_nombre||'';VM.cerrado=!!d.cerrado;VM.cats=(d.cats||[]).map(x=>x.n);
+ if(VM.cats.length){DB.cats=d.cats.map(x=>({n:x.n,c:x.c,i:x.i||undefined}))}// para colores e íconos
+ VM.items=[];if(VM.pid){const r=await SB.from('gastos_matilde').select('*').eq('periodo_id',VM.pid).order('orden');
+  if(!r.error)VM.items=r.data.map(g=>({id:g.id,d:g.d,v:+g.v,cat:g.cat||'',comp:g.comp||''}))}
+ pintarVistaMatilde()}
+function pintarVistaMatilde(){if(MODO!=='matilde')return;const lock=VM.cerrado||!VM.pid;
+ $('hPer').textContent='Mis gastos';$('mtPer').textContent=VM.nombre?'Periodo '+VM.nombre:'';
+ $('mtSinPer').classList.toggle('hide',!!VM.pid);$('mtCerrado').classList.toggle('hide',!(VM.pid&&VM.cerrado));$('mtForm').classList.toggle('hide',lock);
+ const tot=VM.items.reduce((s,x)=>s+num(x.v),0);$('mtTot').textContent=fmt(tot);$('mtN').textContent=VM.items.length+' gasto'+(VM.items.length===1?'':'s');
+ $('mtC').innerHTML=(VM.cats.length?VM.cats:['Otros']).map(k=>`<option ${k==='Otros'?'selected':''}>${esc(k)}</option>`).join('');
+ const L=$('mtLista');L.innerHTML='';
+ if(!VM.items.length){L.innerHTML='<p class="mut" style="margin:4px 0">Aún no tienes gastos en este periodo.</p>';return}
+ [...VM.items].reverse().forEach(it=>{const f=document.createElement('div');f.className='mt-it';
+  const d=document.createElement('input');d.value=it.d;d.disabled=lock;d.onchange=()=>guardarItemM(it,{d:up(d.value)});
+  const v=document.createElement('input');v.className='mt-v';v.inputMode='numeric';v.value=fmt(it.v);v.disabled=lock;
+  v.onfocus=()=>{v.value=it.v||'';v.select()};
+  v.onblur=async()=>{const n=num(v.value);if(n===num(it.v)){v.value=fmt(it.v);return}
+   if(num(it.v)&&!n&&!await preguntar(`Tenía ${fmt(it.v)}. ¿Dejarlo en $0?`,{titulo:'¿Borrar este monto?',si:'Borrar monto',peligro:true})){v.value=fmt(it.v);return}
+   guardarItemM(it,{v:n})};
+  v.onkeydown=e=>{if(e.key==='Enter')v.blur()};
+  const c=document.createElement('select');c.disabled=lock;c.innerHTML=[...new Set([...(VM.cats.length?VM.cats:['Otros']),it.cat||'Otros'])].map(k=>`<option ${k===(it.cat||'Otros')?'selected':''}>${esc(k)}</option>`).join('');
+  c.onchange=()=>guardarItemM(it,{cat:c.value});
+  const acc=document.createElement('span');acc.className='mt-acc';
+  if(it.comp){const b=document.createElement('button');b.className='x';b.textContent='🧾';b.title='Ver comprobante';b.style.color='var(--ok)';b.onclick=()=>verComp(it);acc.appendChild(b)}
+  if(!lock){const b=document.createElement('button');b.className='x';b.textContent='📎';b.title=it.comp?'Cambiar comprobante':'Adjuntar comprobante';
+   b.onclick=()=>pedirArchivo(async file=>{estado('⏳ Subiendo comprobante…');try{const ruta=await subirArchivo(file),viejo=it.comp;await guardarItemM(it,{comp:ruta});if(viejo&&viejo.startsWith(USR.id+'/'))SB.storage.from('comprobantes').remove([viejo]);estado('🧾 Comprobante guardado')}catch(e){avisar(e.message||String(e),'No se pudo subir')}});acc.appendChild(b);
+   const x=document.createElement('button');x.className='x';x.textContent='✕';x.title='Eliminar';
+   x.onclick=async()=>{if(!await preguntar(`"${it.d||'Sin nombre'}"${num(it.v)?' de '+fmt(it.v):''}${it.comp?' y su comprobante':''}.`,{titulo:'¿Eliminar este gasto?',si:'Eliminar',peligro:true}))return;
+    const r=await SB.from('gastos_matilde').delete().eq('id',it.id);if(r.error)return avisar(r.error.message,'No se pudo eliminar');
+    if(it.comp&&it.comp.startsWith(USR.id+'/'))SB.storage.from('comprobantes').remove([it.comp]);VM.items=VM.items.filter(y=>y!==it);pintarVistaMatilde()};acc.appendChild(x)}
+  f.append(chipEl(it.cat||'Otros'),d,v,c,acc);L.appendChild(f)})}
+function chipEl(cat){const s=document.createElement('span');s.className='mt-ci';s.innerHTML=typeof chipCat==='function'?chipCat(cat):'';return s}
+async function guardarItemM(it,cambio){const r=await SB.from('gastos_matilde').update(cambio).eq('id',it.id);
+ if(r.error){avisar(r.error.message,'No se pudo guardar');return cargarVistaMatilde()}Object.assign(it,cambio);estado('☁️ Guardado '+hora());pintarVistaMatilde()}
+(function montarFormMatilde(){const d=$('mtD'),v=$('mtV'),cam=$('mtCam');
+ const pintarCam=()=>{cam.innerHTML=VM.foto?(VM.foto.type.startsWith('image/')?`<img src="${URL.createObjectURL(VM.foto)}" alt=""><i>✓</i>`:'📄<i>✓</i>'):'📷';cam.classList.toggle('lista',!!VM.foto)};
+ cam.onclick=()=>{if(VM.foto){VM.foto=null;pintarCam();return}pedirArchivo(f=>{VM.foto=f;pintarCam()})};
+ d.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();v.focus()}};
+ v.onkeydown=e=>{if(e.key==='Enter')$('mtOk').click()};v.onblur=()=>{if(v.value)v.value=fmt(num(v.value))};
+ $('mtOk').onclick=async()=>{if(!VM.pid||VM.cerrado)return;if(!d.value.trim())return d.focus();const b=$('mtOk');b.disabled=true;
+  try{let comp=null;if(VM.foto){estado('⏳ Subiendo comprobante…');comp=await subirArchivo(VM.foto)}
+   const r=await SB.from('gastos_matilde').insert({periodo_id:VM.pid,d:up(d.value),v:num(v.value),cat:$('mtC').value,comp}).select('*').single();
+   if(r.error)throw r.error;VM.items.push({id:r.data.id,d:r.data.d,v:+r.data.v,cat:r.data.cat||'',comp:r.data.comp||''});
+   d.value='';v.value='';VM.foto=null;pintarCam();estado('☁️ Guardado '+hora());pintarVistaMatilde();d.focus()}
+  catch(e){avisar(e.message||String(e),'No se pudo guardar')}finally{b.disabled=false}}})();
 renderTodo();iniciarNube();iniciarArchivo();
 </script></body></html>
