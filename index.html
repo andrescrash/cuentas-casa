@@ -154,6 +154,8 @@ td input,td select{width:100%;border:1px solid transparent;background:transparen
   <div class="row" style="margin-top:10px"><input id="nuevaPersona" placeholder="Nombre"><input id="nuevoColor" type="color" value="#f9e79f" style="width:50px;padding:3px"><button class="btn" onclick="nuevaPersona()">Agregar persona</button></div></div>
  <div class="card"><h2><span class="t"><i style="background:var(--in)">📌</i>Gastos fijos</span><span class="mut" style="font-size:12px;font-weight:500">Aparecen solos en cada periodo nuevo</span></h2><div id="cfgFijos" class="chips"></div>
   <div class="row" style="margin-top:10px"><input id="nuevoFijo" placeholder="Ej: LUZ"><button class="btn" onclick="nuevoFijo()">Agregar fijo</button></div></div>
+ <div class="card"><h2><span class="t"><i style="background:var(--in)">🎨</i>Categorías</span><span class="mut" style="font-size:12px;font-weight:500">Cambia el nombre o el color; los gastos se actualizan solos</span></h2><div id="cfgCats"></div>
+  <div class="row" style="margin-top:10px"><input id="nuevaCat" placeholder="Ej: Transporte"><input id="nuevaCatCol" type="color" value="#ec4899" style="width:50px;padding:3px"><button class="btn" onclick="nuevaCat()">Agregar categoría</button></div></div>
  <div class="card"><h2><span class="t"><i style="background:var(--in)">🏷️</i>Catálogo de gastos y categorías</span></h2><p class="mut">Se aprende solo de lo que escribes. Aquí puedes cambiar la categoría de cada gasto.</p><div id="cfgCat" style="max-height:440px;overflow:auto"></div></div>
 </section>
 </main>
@@ -205,8 +207,12 @@ const preguntar=(msg,o)=>dialogo(msg,o);
 const avisar=(msg,titulo='Aviso')=>dialogo(msg,{titulo,si:'Entendido',solo:true});
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const MES3=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-const CATS=['Servicios','Mercado','Restaurantes','Casa','Otros'];
-const CATCOL={Servicios:'#6366f1',Mercado:'#10b981',Restaurantes:'#f59e0b',Casa:'#06b6d4',Otros:'#a3a3c2'};
+/* categorías: se guardan en DB.cats = [{n:'Mercado',c:'#10b981'}, …] */
+const CATS_BASE=[['Servicios','#6366f1'],['Mercado','#10b981'],['Restaurantes','#f59e0b'],['Casa','#06b6d4'],['Otros','#a3a3c2']];
+function catsD(){if(!DB.cats||!DB.cats.length)DB.cats=CATS_BASE.map(([n,c])=>({n,c}));return DB.cats}
+function catsL(){return catsD().map(x=>x.n)}
+function colCat(k){const x=catsD().find(y=>y.n===k);return x?x.c:'#a3a3c2'}
+function canon(k){const l=catsL();return l.includes(k)?k:(l.includes('Otros')?'Otros':l[0])}
 const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-CO');
 const corto=n=>{n=Math.round(n||0);const a=Math.abs(n);return a>=1e6?'$'+(n/1e6).toLocaleString('es-CO',{maximumFractionDigits:1})+'M':a>=1e3?'$'+Math.round(n/1e3)+'k':'$'+n};
 const num=s=>Number(String(s).replace(/[^\d-]/g,''))||0;
@@ -302,7 +308,7 @@ function catalogo(tipo){const c={};
  if(tipo==='egresos')for(const k in S)c[k]={nombre:k,usos:0,ultimo:S[k][1]};else for(const k in SM)c[k]={nombre:k,usos:0,ultimo:SM[k]};
  for(const p of periodosOrd())for(const it of (p[tipo]||[])){const k=up(it.d);if(!k)continue;c[k]=c[k]||{nombre:k,usos:0,ultimo:0};c[k].usos++;if(num(it.v))c[k].ultimo=num(it.v)}
  return Object.values(c).sort((a,b)=>b.usos-a.usos||a.nombre.localeCompare(b.nombre))}
-function catDe(n){const k=up(n);const S=SEM();return DB.catMap[k]||(S[k]&&S[k][0])||'Otros'}
+function catDe(n){const k=up(n);const S=SEM();return canon(DB.catMap[k]||(S[k]&&S[k][0])||'Otros')}
 
 /* ================= periodos por rango ================= */
 const P=()=>DB.periodos.find(p=>p.id===DB.actual);
@@ -481,9 +487,9 @@ function renderPeriodo(){const p=P();
   r.append(add,menu,qp);d.appendChild(r);$('entradas').appendChild(d)});
  const t=document.createElement('table');t.innerHTML='<tr><th>Gasto</th><th class="v" style="text-align:right">Valor</th><th class="c">Categoría</th><th class="n">Nota</th><th></th><th></th></tr>';
  p.egresos.forEach((it,i)=>{const tr=t.insertRow();const c=td(tr,'',filaTexto(it,'d',lock));c.style.display='flex';c.style.alignItems='center';
-  c.insertAdjacentHTML('afterbegin',`<span class="dot" style="background:${CATCOL[it.cat||catDe(it.d)]};margin-left:6px"></span>`);
+  c.insertAdjacentHTML('afterbegin',`<span class="dot" style="background:${colCat(canon(it.cat||catDe(it.d)))};margin-left:6px"></span>`);
   td(tr,'v',filaValor(it,lock,resumen));
-  const s=document.createElement('select');s.innerHTML=CATS.map(k=>`<option ${k===(it.cat||catDe(it.d))?'selected':''}>${k}</option>`).join('');s.disabled=lock;
+  const s=document.createElement('select');s.innerHTML=catsL().map(k=>`<option ${k===canon(it.cat||catDe(it.d))?'selected':''}>${k}</option>`).join('');s.disabled=lock;
   s.onchange=()=>{it.cat=s.value;DB.catMap[up(it.d)]=s.value;save();renderPeriodo()};td(tr,'c',s);
   td(tr,'n',filaTexto(it,'nota',lock,'nota'));td(tr,'xx',btnComp(it,lock));td(tr,'xx',btnX(lock,()=>quitarFila(p.egresos,i)))});
  $('salidas').appendChild(t);$('salidas').insertAdjacentHTML('beforeend','<div class="tot">Total egresos: <span class="r" id="totE"></span></div>');
@@ -501,7 +507,7 @@ function calc(p){const porP=p.entradas.map(e=>{const x=DB.personas.find(y=>y.id=
  const ti=porP.reduce((s,x)=>s+x.t,0),te=sum(p.egresos),tm=sum(p.matilde),ta=sum(p.andres||[]),ie=ti-te,mitad=ie/2;
  return{porP,ti,te,tm,ta,ie,mitad,andres:mitad-ta,matilde:mitad-tm}}
 function donut(datos,total){const R=54,C=2*Math.PI*R;let off=0;
- const segs=datos.map(([k,v])=>{const l=total?v/total*C:0;const s=`<circle r="${R}" cx="70" cy="70" fill="none" stroke="${CATCOL[k]}" stroke-width="20" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"/>`;off+=l;return s}).join('');
+ const segs=datos.map(([k,v])=>{const l=total?v/total*C:0;const s=`<circle r="${R}" cx="70" cy="70" fill="none" stroke="${colCat(k)}" stroke-width="20" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"/>`;off+=l;return s}).join('');
  return`<svg width="140" height="140" viewBox="0 0 140 140"><circle r="${R}" cx="70" cy="70" fill="none" stroke="var(--in)" stroke-width="20"/>${segs}<text x="70" y="66" text-anchor="middle" font-size="11" fill="var(--mut)">Total</text><text x="70" y="84" text-anchor="middle" font-size="15" font-weight="800" fill="var(--tx)">${corto(total)}</text></svg>`}
 function resumen(){const p=P();if(!p)return;const c=calc(p);
  $('kpis').innerHTML=`
@@ -514,8 +520,8 @@ function resumen(){const p=P();if(!p)return;const c=calc(p);
  <div><span>Gastos de Matilde</span><b class="r">− ${fmt(c.tm)}</b></div>
  <div><span>Gastos de Andrés</span><b class="r">− ${fmt(c.ta)}</b></div>
  <div class="big"><span>👨 Andrés</span><span class="g">${fmt(c.andres)}</span></div><div class="big" style="border:none"><span>👩 Matilde</span><span class="g">${fmt(c.matilde)}</span></div>`;
- const pc={};p.egresos.forEach(i=>{const k=i.cat||catDe(i.d);pc[k]=(pc[k]||0)+num(i.v)});const ds=Object.entries(pc).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
- $('cats').innerHTML=ds.length?`<div class="donut">${donut(ds,c.te)}<div class="leg" style="flex:1">${ds.map(([k,v])=>`<div><span><span class="dot" style="background:${CATCOL[k]}"></span>${k}</span><b>${Math.round(v/c.te*100)}%</b></div>`).join('')}</div></div>`:'<p class="mut">Sin egresos todavía.</p>';
+ const pc={};p.egresos.forEach(i=>{const k=canon(i.cat||catDe(i.d));pc[k]=(pc[k]||0)+num(i.v)});const ds=Object.entries(pc).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+ $('cats').innerHTML=ds.length?`<div class="donut">${donut(ds,c.te)}<div class="leg" style="flex:1">${ds.map(([k,v])=>`<div><span><span class="dot" style="background:${colCat(k)}"></span>${k}</span><b>${Math.round(v/c.te*100)}%</b></div>`).join('')}</div></div>`:'<p class="mut">Sin egresos todavía.</p>';
  const mx=Math.max(1,...c.porP.map(x=>x.t));
  $('porPer').innerHTML=c.porP.map(x=>`<div class="hbar"><div class="row"><span><span class="dot" style="background:${x.color}"></span>${esc(x.nombre)}</span><b>${fmt(x.t)}</b></div><div class="tr"><i style="width:${x.t/mx*100}%;background:${x.color}"></i></div></div>`).join('')||'<p class="mut">Sin personas.</p>';
  if($('totE'))$('totE').textContent=fmt(c.te);if($('totM'))$('totM').textContent=fmt(c.tm);if($('totA'))$('totA').textContent=fmt(c.ta)}
@@ -536,11 +542,35 @@ function renderConfig(){$('cfgPersonas').innerHTML='';const t=document.createEle
   const a=document.createElement('label');a.innerHTML=`<input type="checkbox" ${x.activa?'checked':''} style="width:auto;margin-right:6px">Incluir en periodos nuevos`;a.querySelector('input').onchange=e=>{x.activa=e.target.checked;save()};td(tr,'',a)});
  $('cfgPersonas').appendChild(t);
  $('cfgFijos').innerHTML=DB.fijos.map((f,i)=>`<span>${esc(f)}<button class="x" onclick="DB.fijos.splice(${i},1);save();renderConfig()">✕</button></span>`).join('');
+ $('cfgCats').innerHTML='';const tk=document.createElement('table');
+ catsD().forEach((x,i)=>{const tr=tk.insertRow();
+  const c=document.createElement('input');c.type='color';c.value=x.c;c.style.cssText='width:44px;padding:2px';c.oninput=()=>{x.c=c.value;save()};td(tr,'xx',c);
+  const n=document.createElement('input');n.value=x.n;n.onchange=()=>renombrarCat(x,n.value.trim(),n);td(tr,'',n);
+  const usos=DB.periodos.reduce((s,p)=>s+p.egresos.filter(i=>canon(i.cat||catDe(i.d))===x.n).length,0);
+  td(tr,'mut').textContent=usos+' gasto'+(usos===1?'':'s');
+  td(tr,'xx',btnX(catsD().length<2,()=>borrarCat(x,usos)))});
+ $('cfgCats').appendChild(tk);
  $('cfgCat').innerHTML='';const tc=document.createElement('table');tc.innerHTML='<tr><th>Gasto</th><th>Veces</th><th>Último valor</th><th>Categoría</th></tr>';
- catalogo('egresos').forEach(c=>{const tr=tc.insertRow();tr.insertCell().innerHTML=`<span class="dot" style="background:${CATCOL[catDe(c.nombre)]}"></span>${esc(c.nombre)}`;tr.insertCell().textContent=c.usos;tr.insertCell().textContent=fmt(c.ultimo);
-  const s=document.createElement('select');s.innerHTML=CATS.map(k=>`<option ${k===catDe(c.nombre)?'selected':''}>${k}</option>`).join('');s.onchange=()=>{DB.catMap[c.nombre]=s.value;save();renderConfig()};td(tr,'c',s)});
+ catalogo('egresos').forEach(c=>{const tr=tc.insertRow();tr.insertCell().innerHTML=`<span class="dot" style="background:${colCat(catDe(c.nombre))}"></span>${esc(c.nombre)}`;tr.insertCell().textContent=c.usos;tr.insertCell().textContent=fmt(c.ultimo);
+  const s=document.createElement('select');s.innerHTML=catsL().map(k=>`<option ${k===catDe(c.nombre)?'selected':''}>${k}</option>`).join('');s.onchange=()=>{DB.catMap[c.nombre]=s.value;save();renderConfig()};td(tr,'c',s)});
  $('cfgCat').appendChild(tc)}
 function nuevaPersona(){const n=up($('nuevaPersona').value);if(!n)return;DB.personas.push({id:uid(),nombre:n,color:$('nuevoColor').value,activa:true});$('nuevaPersona').value='';save();renderConfig()}
+function nuevaCat(){const n=$('nuevaCat').value.trim();if(!n)return;
+ if(catsL().some(k=>k.toLowerCase()===n.toLowerCase()))return avisar('Ya existe una categoría con ese nombre.');
+ catsD().push({n,c:$('nuevaCatCol').value});$('nuevaCat').value='';save();renderConfig()}
+// cambia el nombre en la lista y en todo lo que la usa (gastos, catálogo y semilla)
+function renombrarCat(x,nuevo,inp){const viejo=x.n;if(!nuevo||nuevo===viejo){inp.value=viejo;return}
+ if(catsL().some(k=>k!==viejo&&k.toLowerCase()===nuevo.toLowerCase())){inp.value=viejo;return avisar('Ya existe una categoría con ese nombre.')}
+ const S=SEM();for(const k in S)if(S[k][0]===viejo&&!DB.catMap[k])DB.catMap[k]=nuevo;
+ for(const k in DB.catMap)if(DB.catMap[k]===viejo)DB.catMap[k]=nuevo;
+ DB.periodos.forEach(p=>p.egresos.forEach(i=>{if(i.cat===viejo)i.cat=nuevo}));
+ x.n=nuevo;save();renderConfig()}
+async function borrarCat(x,usos){const l=catsL().filter(k=>k!==x.n),dest=l.includes('Otros')?'Otros':l[0];
+ if(!await preguntar(usos?`Sus ${usos} gastos pasarán a "${dest}".`:'No tiene gastos.',{titulo:'¿Borrar la categoría "'+x.n+'"?',si:'Borrar',peligro:true}))return;
+ const S=SEM();for(const k in S)if(S[k][0]===x.n&&!DB.catMap[k])DB.catMap[k]=dest;
+ for(const k in DB.catMap)if(DB.catMap[k]===x.n)DB.catMap[k]=dest;
+ DB.periodos.forEach(p=>p.egresos.forEach(i=>{if(i.cat===x.n)i.cat=dest}));
+ DB.cats=catsD().filter(y=>y!==x);save();renderConfig()}
 function nuevoFijo(){const n=up($('nuevoFijo').value);if(!n||DB.fijos.includes(n))return;DB.fijos.push(n);$('nuevoFijo').value='';save();renderConfig()}
 
 /* ================= pestañas ================= */
