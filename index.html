@@ -165,6 +165,12 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
 .gal-pie b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gal-pie span{font-weight:700;color:var(--ok);white-space:nowrap}
 .gal-sec{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--c);color:#fff}
 .gal-tot{grid-column:1/-1;text-align:right;font-weight:700;color:var(--mut);margin-top:4px}
+.gal-aviso{text-align:left;color:var(--bad);margin:0 0 2px}
+.gal-it{cursor:pointer}.gal-pie.col{flex-direction:column;gap:2px}.gal-pie small{color:var(--mut)}
+.gal-del{position:absolute;top:6px;right:6px;width:32px;height:32px;padding:0;border-radius:50%;background:#000a;border:none;color:#fff;font-size:14px;display:grid;place-items:center;opacity:.85;transition:.15s}
+.gal-del:hover{background:#f43f5e;opacity:1}
+.gal-rec{margin:0 10px 10px;background:#f59e0b;color:#1f1300;border:none;font-weight:700}.gal-rec:hover{filter:brightness(1.08)}
+.dlg-ops{display:grid;gap:8px;margin-top:14px}.dlg-op{text-align:left;padding:12px 14px;display:flex;align-items:center}.dlg-op:hover{border-color:var(--pri);background:color-mix(in srgb,var(--pri) 8%,var(--card))}
 /* ===== celular ===== */
 @media(max-width:640px){
  body{font-size:14px}
@@ -314,6 +320,7 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
 <div id="dlg" class="modal hide" style="z-index:40"><div class="card" style="width:min(420px,100%)">
  <h2 style="margin-bottom:6px"><span id="dlgTitulo"></span></h2>
  <div id="dlgMsg" class="mut" style="line-height:1.5"></div>
+ <div id="dlgOps" class="dlg-ops hide"></div>
  <div class="row" style="justify-content:flex-end;margin-top:18px"><button class="sec" id="dlgNo">Cancelar</button><button class="btn" id="dlgSi">Aceptar</button></div>
 </div></div>
 
@@ -330,12 +337,15 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
 /* ================= utilidades ================= */
 const $=id=>document.getElementById(id);
 /* diálogos propios (en vez de confirm/alert del navegador) */
-function dialogo(msg,{titulo='¿Seguro?',si='Aceptar',no='Cancelar',peligro=false,solo=false}={}){
- return new Promise(ok=>{const d=$('dlg'),bs=$('dlgSi'),bn=$('dlgNo');
+// opciones: [[valor, texto, color], …] → muestra un botón por opción y devuelve el valor elegido (o false)
+function dialogo(msg,{titulo='¿Seguro?',si='Aceptar',no='Cancelar',peligro=false,solo=false,opciones=null}={}){
+ return new Promise(ok=>{const d=$('dlg'),bs=$('dlgSi'),bn=$('dlgNo'),op=$('dlgOps');
   $('dlgTitulo').textContent=titulo;$('dlgMsg').textContent=msg;bs.textContent=si;bn.textContent=no;bn.classList.toggle('hide',solo);
   bs.style.background=peligro?'#f43f5e':'';bs.style.borderColor=peligro?'#f43f5e':'';
+  bs.classList.toggle('hide',!!opciones);op.innerHTML='';op.classList.toggle('hide',!opciones);
+  (opciones||[]).forEach(([v,t,c])=>{const b=document.createElement('button');b.className='sec dlg-op';b.innerHTML=`<span class="dot" style="background:${c||'var(--pri)'}"></span>${esc(t)}`;b.onclick=()=>fin(v);op.appendChild(b)});
   const fin=v=>{d.classList.add('hide');document.removeEventListener('keydown',tec);ok(v)};
-  const tec=e=>{if(e.key==='Escape')fin(false);else if(e.key==='Enter'){e.preventDefault();fin(true)}};
+  const tec=e=>{if(e.key==='Escape')fin(false);else if(e.key==='Enter'&&!opciones){e.preventDefault();fin(true)}};
   bs.onclick=()=>fin(true);bn.onclick=()=>fin(false);d.onclick=e=>{if(e.target===d)fin(false)};
   document.addEventListener('keydown',tec);d.classList.remove('hide');bs.focus()})}
 const preguntar=(msg,o)=>dialogo(msg,o);
@@ -668,22 +678,30 @@ async function huerfanos(p=P()){if(!USR||!p)return[];const usados=new Set();
  return data.filter(f=>f.name&&f.id).map(f=>`${USR.id}/${p.id}/${f.name}`).filter(r=>!usados.has(r))}
 async function abrirGaleria(){const l=compsPeriodo(),hu=await huerfanos();
  if(!l.length&&!hu.length)return avisar('Adjunta fotos con 📷 al registrar un gasto, o con 📎 en su fila.','Aún no hay comprobantes en este periodo');
- let ph=null;if(hu.length){try{await urlsDe(hu)}catch(e){}
-  ph=()=>{$('galGrid').insertAdjacentHTML('beforeend',`<div class="gal-tot" style="text-align:left;color:var(--bad)">⚠️ ${hu.length} comprobante${hu.length>1?'s':''} sin gasto (se subió pero el gasto no quedó guardado). Tócalo para recuperarlo.</div>`+
-   hu.map((r,i)=>`<button class="gal-it" data-h="${i}" style="--c:#f59e0b"><span class="gal-img">${esPdf(r)?'<span class="gal-pdf">📄</span>':`<img src="${URLS[r]?URLS[r].u:''}" alt="">`}</span><span class="gal-pie"><b>Sin gasto</b><span>${new Date(+r.split('/').pop().split('.')[0]).toLocaleString('es-CO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></span><span class="gal-sec">Recuperar</span></button>`).join(''));
-   const viejo=$('galGrid').onclick;$('galGrid').onclick=async e=>{const b=e.target.closest('[data-h]');if(!b)return viejo&&viejo(e);const r=hu[+b.dataset.h];
-    if(P().cerrado)return avisar('El periodo está cerrado; reábrelo para recuperar.');
-    if(!await preguntar('Se crea un egreso con este comprobante. Luego le pones el nombre y el valor.',{titulo:'Recuperar comprobante',si:'Crear egreso'}))return;
-    P().egresos.push({d:'RECUPERADO',v:0,cat:'Otros',comp:r});save();renderPeriodo();$('galeria').classList.add('hide');
-    const c=$('salidas').closest('.card');c.classList.remove('plegada');c.scrollIntoView({behavior:'smooth'})}}}
- try{await urlsDe(l.map(c=>c.it.comp))}catch(e){return avisar(e.message,'No pude cargar los comprobantes')}
- const tot=l.reduce((s,c)=>s+num(c.it.v),0);
- $('galGrid').innerHTML=l.map((c,i)=>{const u=URLS[c.it.comp].u;return`<button class="gal-it" data-i="${i}" style="--c:${c.col}">
-  <span class="gal-img">${esPdf(c.it.comp)?'<span class="gal-pdf">📄<small>PDF</small></span>':`<img src="${u}" loading="lazy" alt="">`}</span>
-  <span class="gal-pie"><b>${esc(c.it.d||'Sin nombre')}</b><span>${c.it.v?fmt(c.it.v):''}</span></span><span class="gal-sec">${esc(c.sec)}</span></button>`}).join('')+
-  `<div class="gal-tot">${l.length} comprobante${l.length>1?'s':''} · ${fmt(tot)}</div>`;
- $('galGrid').onclick=e=>{const b=e.target.closest('[data-i]');if(b){$('galeria').classList.add('hide');verComp(l[+b.dataset.i].it)}};
- if(!l.length)$('galGrid').innerHTML='';if(ph)ph();
+ try{await urlsDe([...l.map(c=>c.it.comp),...hu])}catch(e){return avisar(e.message,'No pude cargar los comprobantes')}
+ const lock=P().cerrado,tot=l.reduce((s,c)=>s+num(c.it.v),0),u=r=>URLS[r]?URLS[r].u:'';
+ const img=r=>`<span class="gal-img">${esPdf(r)?'<span class="gal-pdf">📄<small>PDF</small></span>':`<img src="${u(r)}" loading="lazy" alt="">`}</span>`;
+ const del=`<button class="gal-del" data-del title="Eliminar comprobante" ${lock?'disabled':''}>🗑️</button>`;
+ const fecha=r=>{const t=+r.split('/').pop().split('.')[0];return t?new Date(t).toLocaleString('es-CO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''};
+ $('galGrid').innerHTML=
+  (hu.length?`<div class="gal-tot gal-aviso">⚠️ ${hu.length} comprobante${hu.length>1?'s':''} sin gasto: se subió pero el gasto no quedó guardado. Toca <b>Recuperar</b> y elige a dónde va.</div>`+
+   hu.map((r,i)=>`<div class="gal-it" data-h="${i}" style="--c:#f59e0b">${img(r)}<span class="gal-pie col"><b>Sin gasto</b><small>${fecha(r)}</small></span>
+    <span class="gal-sec">Sin gasto</span>${del}<button class="gal-rec" data-rec ${lock?'disabled':''}>↩️ Recuperar</button></div>`).join(''):'')+
+  l.map((c,i)=>`<div class="gal-it" data-i="${i}" style="--c:${c.col}">${img(c.it.comp)}
+   <span class="gal-pie"><b>${esc(c.it.d||'Sin nombre')}</b><span>${c.it.v?fmt(c.it.v):''}</span></span><span class="gal-sec">${esc(c.sec)}</span>${del}</div>`).join('')+
+  (l.length?`<div class="gal-tot">${l.length} comprobante${l.length>1?'s':''} · ${fmt(tot)}</div>`:'');
+ $('galGrid').onclick=async e=>{const card=e.target.closest('.gal-it');if(!card)return;
+  const h=card.dataset.h!==undefined?hu[+card.dataset.h]:null,c=card.dataset.i!==undefined?l[+card.dataset.i]:null;
+  if(e.target.closest('[data-del]')){
+   if(!await preguntar(c?`Se borra la foto; el gasto "${c.it.d||'sin nombre'}" se queda.`:'Se borra la foto para siempre.',{titulo:'¿Eliminar este comprobante?',si:'Eliminar',peligro:true}))return;
+   const r=c?c.it.comp:h;SB.storage.from('comprobantes').remove([r]);delete URLS[r];if(c){delete c.it.comp;save();renderPeriodo()}
+   return abrirGaleria()}
+  if(h){if(!e.target.closest('[data-rec]'))return window.open(u(h),'_blank');
+   const k=await preguntar('Se crea un gasto con este comprobante; luego le pones el nombre y el valor.',{titulo:'¿A dónde va este comprobante?',opciones:SECC.map(([k,n,col])=>[k,n,col])});
+   if(!k)return;const it={d:'RECUPERADO',v:0,comp:h};if(k==='egresos')it.cat='Otros';
+   P()[k].push(it);save();renderPeriodo();$('galeria').classList.add('hide');
+   const caja=$(k==='egresos'?'salidas':k).closest('.card');caja.classList.remove('plegada');caja.scrollIntoView({behavior:'smooth',block:'center'});return}
+  if(c){$('galeria').classList.add('hide');verComp(c.it)}};
  $('galeria').classList.remove('hide')}
 
 function btnComp(it,lock){const b=document.createElement('button');b.className='x';
