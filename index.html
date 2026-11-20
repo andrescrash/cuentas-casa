@@ -63,7 +63,7 @@ td input,td select{width:100%;border:1px solid transparent;background:transparen
 .card.plegada>h2~*,.card.plegada>h2>span.row,.card.plegada>h2>span.mut{display:none!important}.card.plegada>h2{margin-bottom:0}
 .per.plegada>:not(.per-h){display:none!important}
 .card>h2>.t{cursor:pointer}
-.pill.CB{background:#8bc34a;color:#14290a}.pill.ROJA{background:#e53935;color:#fff}.pill.BLANCA{background:#fff;color:#1f2937;box-shadow:inset 0 0 0 1px #0002}
+.pill.CB{background:#8bc34a;color:#14290a}.pill.SC{background:#e53935;color:#fff}.pill.BG{background:#fff;color:#1f2937;box-shadow:inset 0 0 0 1px #0002}
 /* quick */
 .quick{display:flex;gap:8px;margin-bottom:12px;position:relative;background:var(--in);padding:8px;border-radius:14px}.quick input:first-child{flex:1}
 .ac{position:absolute;z-index:10;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:0 12px 30px #0003;max-height:280px;overflow:auto;min-width:280px;padding:4px}
@@ -316,7 +316,7 @@ function itemsPersona(nom,a,b){const it=[];
  quincenas(a,b).forEach(x=>it.push({d:`CB ${nom} ${x.q} | ${dd(x.ini.getDate())} ${MC(x.ini.getMonth())} ➡️ ${dd(x.fin.getDate())} ${MC(x.fin.getMonth())}`,v:0}));
  const MesC=m=>MESES[m].charAt(0).toUpperCase()+MESES[m].slice(1);
  domingos(a,b).forEach((d,i)=>{const l=new Date(d);l.setDate(l.getDate()-6);const ini=l<a?a:l;
-  it.push({d:`ROJA ${i+1} ${nom} | ${ini.getDate()} ${MesC(ini.getMonth())} ➡️ ${d.getDate()} ${MesC(d.getMonth())}`,v:0})});return it}
+  it.push({d:`SC ${i+1} ${nom} | ${ini.getDate()} ${MesC(ini.getMonth())} ➡️ ${d.getDate()} ${MesC(d.getMonth())}`,v:0})});return it}
 function sugerirSiguiente(){const ps=periodosOrd(),u=ps[ps.length-1];const h=new Date();
  if(!u)return[new Date(h.getFullYear(),h.getMonth(),1),new Date(h.getFullYear(),h.getMonth(),ultimoDia(h.getFullYear(),h.getMonth()))];
  const a=pd(u.fin);a.setDate(a.getDate()+1);const y=a.getFullYear(),m=a.getMonth();
@@ -347,7 +347,7 @@ function pintarCal(){const v=M.vista,v2=new Date(v.getFullYear(),v.getMonth()+1,
   if(!M.a||M.b){M.a=d;M.b=null}else if(d<M.a){M.b=M.a;M.a=d}else M.b=d;pintarCal()});
  if(M.a&&M.b){const r=infoRango(M.a,M.b),n=domingos(M.a,M.b).length,q=quincenas(M.a,M.b).length;
   $('mRango').textContent=r.tipo==='personalizado'?r.nombre:r.nombre+' · '+fCorta(M.a)+' al '+fCorta(M.b);
-  $('mInfo').textContent=M.modo==='nuevo'?`Por persona: ${q} CB y ${n} ROJA (domingos). Más ${DB.fijos.length} gastos fijos.`:'Las filas que ya escribiste no se tocan.';$('mOk').disabled=false}
+  $('mInfo').textContent=M.modo==='nuevo'?`Por persona: ${q} CB y ${n} SC (semanas). Más ${DB.fijos.length} gastos fijos.`:'Las filas que ya escribiste no se tocan.';$('mOk').disabled=false}
  else{$('mRango').textContent=M.a?'Inicio: '+fCorta(M.a)+' — ahora elige el día final':'Haz clic en el día de inicio';$('mInfo').textContent='';$('mOk').disabled=true}}
 function confirmarModal(){if(!M.a||!M.b)return;const r=infoRango(M.a,M.b);
  if(M.modo==='editar'){const p=P();p.inicio=iso(M.a);p.fin=iso(M.b);p.tipo=r.tipo;p.nombre=r.nombre;cerrarModal();save();renderPeriodo();return}
@@ -429,9 +429,11 @@ function migrarRojas(){let cambio=false;const MesC=m=>MESES[m].charAt(0).toUpper
   // CB: "CB X 1 (01 NOV - 15 NOV)" → "CB X 1 | 01 Noviembre ➡️ 15 Noviembre"
   p.entradas.forEach(e=>e.items.forEach(it=>{const m=/^(CB \d* ?.+?) \((\d+) (\p{L}{3}) - (\d+) (\p{L}{3})\)$/u.exec(it.d||'');if(!m)return;
    const m1=MES3.indexOf(m[3].toUpperCase()),m2=MES3.indexOf(m[5].toUpperCase());if(m1<0||m2<0)return;
-   it.d=`${m[1]} | ${m[2].padStart(2,'0')} ${MesC(m1)} ➡️ ${m[4].padStart(2,'0')} ${MesC(m2)}`;cambio=true}))});
+   it.d=`${m[1]} | ${m[2].padStart(2,'0')} ${MesC(m1)} ➡️ ${m[4].padStart(2,'0')} ${MesC(m2)}`;cambio=true}));
+  // nombres nuevos: ROJA → SC, BLANCA → BG
+  p.entradas.forEach(e=>e.items.forEach(it=>{const n=(it.d||'').replace(/^ROJA\b/,'SC').replace(/^BLANCA\b/,'BG');if(n!==it.d){it.d=n;cambio=true}}))});
  if(cambio)save()}
-function pillDe(t){const m=/^(CB|ROJA|BLANCA)\b/i.exec(t||'');return m?m[1].toUpperCase():''}
+function pillDe(t){const m=/^(CB|SC|BG)\b/i.exec(t||'');return m?m[1].toUpperCase():''}
 
 function renderPeriodo(){const p=P();
  $('selPer').innerHTML=periodosOrd().reverse().map(x=>`<option value="${x.id}" ${x.id===DB.actual?'selected':''}>${x.cerrado?'🔒 ':''}${esc(x.nombre)}</option>`).join('')||'<option>— sin periodos —</option>';
@@ -463,11 +465,16 @@ function renderPeriodo(){const p=P();
    td(tr,'v',filaValor(it,lock,upd));td(tr,'xx',btnX(lock,()=>{e.items.splice(i,1);save();renderPeriodo()}))});
   d.appendChild(t);
   const r=document.createElement('div');r.className='row';r.style.marginTop='8px';
-  const add=document.createElement('button');add.className='sec';add.textContent='＋ Fila';add.disabled=lock;add.onclick=()=>{e.items.push({d:'',v:0});save();renderPeriodo()};
+  const add=document.createElement('button');add.className='sec';add.textContent='＋ Fila';add.disabled=lock;
+  const menu=document.createElement('span');menu.className='row hide';menu.style.gap='6px';
+  const nueva=tipo=>{let d='';if(tipo){const n=e.items.filter(x=>pillDe(x.d)===tipo).length+1;d=`${tipo} ${n} ${per.nombre}`}
+   e.items.push({d,v:0});save();renderPeriodo()};
+  [['CB','CB'],['SC','SC'],['BG','BG'],['','Otra']].forEach(([k,txt])=>{const b=document.createElement('button');b.className='sec';
+   b.innerHTML=k?`<span class="pill ${k}" style="margin:0">${k}</span>`:txt;b.onclick=()=>nueva(k);menu.appendChild(b)});
+  const cx=document.createElement('button');cx.className='x';cx.textContent='✕';cx.title='Cancelar';cx.onclick=()=>{menu.classList.add('hide');add.classList.remove('hide')};menu.appendChild(cx);
+  add.onclick=()=>{add.classList.add('hide');menu.classList.remove('hide')};
   const qp=document.createElement('button');qp.className='x';qp.textContent='Quitar del periodo';qp.disabled=lock;qp.onclick=async()=>{if(await preguntar('Se quitarán sus entradas de este periodo.',{titulo:'¿Quitar a '+per.nombre+'?',si:'Quitar',peligro:true})){p.entradas.splice(ei,1);save();renderPeriodo()}};
-  const bl=document.createElement('button');bl.className='sec';bl.innerHTML='＋ <span class="pill BLANCA" style="margin:0">BLANCA</span>';bl.disabled=lock;
-  bl.onclick=()=>{const n=e.items.filter(x=>pillDe(x.d)==='BLANCA').length+1;e.items.push({d:`BLANCA ${n} ${per.nombre}`,v:0});save();renderPeriodo()};
-  r.append(add,bl,qp);d.appendChild(r);$('entradas').appendChild(d)});
+  r.append(add,menu,qp);d.appendChild(r);$('entradas').appendChild(d)});
  const t=document.createElement('table');t.innerHTML='<tr><th>Gasto</th><th class="v" style="text-align:right">Valor</th><th class="c">Categoría</th><th class="n">Nota</th><th></th><th></th></tr>';
  p.egresos.forEach((it,i)=>{const tr=t.insertRow();const c=td(tr,'',filaTexto(it,'d',lock));c.style.display='flex';c.style.alignItems='center';
   c.insertAdjacentHTML('afterbegin',`<span class="dot" style="background:${CATCOL[it.cat||catDe(it.d)]};margin-left:6px"></span>`);
