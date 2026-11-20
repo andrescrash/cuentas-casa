@@ -32,6 +32,7 @@ h3{font-size:14px;margin:0}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mut{color:var(--mut)}
 .hide{display:none!important}
 #entradas a{color:var(--pri);font-weight:600}
+.gal-n{background:var(--ok);color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:2px}
 /* barra del periodo */
 .pbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .pbar select{font-weight:700;font-size:15px;min-width:230px}
@@ -219,7 +220,7 @@ h2.pleg{cursor:pointer;user-select:none;margin:-18px -18px 14px;padding:18px;bor
   <button class="btn" onclick="abrirNuevo()">＋ Nuevo periodo</button>
   <button class="sec" id="btnFechas" onclick="abrirFechas()">📅 Fechas</button>
   <button class="sec" id="btnCerrar" onclick="toggleCerrar()">🔒 Cerrar</button>
-  <button class="sec" id="btnGal" onclick="abrirGaleria()" title="Ver todos los comprobantes del periodo">🧾 <span id="galN">0</span></button>
+  <button class="sec" id="btnGal" onclick="abrirGaleria()" title="Ver todos los comprobantes del periodo">🧾 Comprobantes <span id="galN" class="gal-n">0</span></button>
   <button class="sec" onclick="borrarPeriodo()" title="Eliminar periodo">🗑️</button>
  </div>
  <div id="vacio" class="card empty hide"><b>🗓️</b><h2 style="justify-content:center">Aún no hay periodos</h2><p class="mut">Crea el primero y elige las fechas en el calendario.</p><button class="btn" onclick="abrirNuevo()">＋ Nuevo periodo</button></div>
